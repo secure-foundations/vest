@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0e0bd3c9.js";
+            window.path_to_searchindex_js = "../searchindex-63fac2c1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -299,7 +299,7 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
 <pre><code class="language-rust ignore">mod __impl_packet {
     use super::*;
     vest_lib::impl_der!(
-        tagged_exact(true),   // this definition contributes an outer tag
+        tag(constructed),     // this definition has a constructed outer tag
         borrowed,             // the value type borrows from the input
         PACKET, PACKET__,     // nominal type and its combinator type alias
         PacketSpec, Packet,   // abstract and executable value types
@@ -310,9 +310,10 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
 <code>SpecByteLen</code>, <code>Consistency</code>), compositional proof traits (<code>SafeParser</code>,
 <code>Productive</code>, <code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>SPRoundTripDps</code>, etc.), and
 executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
-<p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
-allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
-accept several encodings of the same logical value, with different lengths.</p>
+<p>Both macros implement <code>SoundParser</code>: successful parsing produces a value
+consistent with the format. <code>impl_der!</code> additionally implements <code>StrictParser</code>,
+<code>NonMalleable</code>, and allocation-free <code>DerOrd</code>. BER may accept several encodings of
+the same value with different lengths, so <code>impl_ber!</code> does not promise strict length consumption or non-malleability.</p>
 <h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
 <p>Calling the parser, serializer, and the prepare methods is
 almost identical in shape to DSL-generated code, except that the format value is the

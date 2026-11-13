@@ -226,149 +226,172 @@
 <a href=#226 id=226 data-nosnippet>226</a>        }
 <a href=#227 id=227 data-nosnippet>227</a>    }
 <a href=#228 id=228 data-nosnippet>228</a>
-<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">impl </span>SoundParserRecBody <span class="kw">for </span>ULeb128RecBody&lt;<span class="bool-val">true</span>&gt; {
-<a href=#230 id=230 data-nosnippet>230</a>        proof <span class="kw">fn </span>lemma_body_sound_inv_preservation(
+<a href=#229 id=229 data-nosnippet>229</a>    <span class="kw">impl </span>StrictParserRecBody <span class="kw">for </span>ULeb128RecBody&lt;<span class="bool-val">true</span>&gt; {
+<a href=#230 id=230 data-nosnippet>230</a>        proof <span class="kw">fn </span>lemma_body_strict_inv_preservation(
 <a href=#231 id=231 data-nosnippet>231</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#232 id=232 data-nosnippet>232</a>            _param: (),
-<a href=#233 id=233 data-nosnippet>233</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#232 id=232 data-nosnippet>232</a>            _param: <span class="self">Self</span>::Param,
+<a href=#233 id=233 data-nosnippet>233</a>            _rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
 <a href=#234 id=234 data-nosnippet>234</a>        ) {
 <a href=#235 id=235 data-nosnippet>235</a>        }
 <a href=#236 id=236 data-nosnippet>236</a>    }
 <a href=#237 id=237 data-nosnippet>237</a>
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; NoLookAheadRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#239 id=239 data-nosnippet>239</a>        proof <span class="kw">fn </span>lemma_body_no_lookahead_inv_preservation(
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; SoundParserRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#239 id=239 data-nosnippet>239</a>        proof <span class="kw">fn </span>lemma_body_sound_inv_preservation(
 <a href=#240 id=240 data-nosnippet>240</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#241 id=241 data-nosnippet>241</a>            _param: (),
 <a href=#242 id=242 data-nosnippet>242</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
 <a href=#243 id=243 data-nosnippet>243</a>        ) {
-<a href=#244 id=244 data-nosnippet>244</a>            reveal(disjoint_domains);
-<a href=#245 id=245 data-nosnippet>245</a>        }
-<a href=#246 id=246 data-nosnippet>246</a>    }
-<a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; ProductiveRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#249 id=249 data-nosnippet>249</a>        proof <span class="kw">fn </span>lemma_body_productive_inv_preservation(
-<a href=#250 id=250 data-nosnippet>250</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#251 id=251 data-nosnippet>251</a>            param: <span class="self">Self</span>::Param,
-<a href=#252 id=252 data-nosnippet>252</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
-<a href=#253 id=253 data-nosnippet>253</a>        ) {
+<a href=#244 id=244 data-nosnippet>244</a>        }
+<a href=#245 id=245 data-nosnippet>245</a>    }
+<a href=#246 id=246 data-nosnippet>246</a>
+<a href=#247 id=247 data-nosnippet>247</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; NoLookAheadRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#248 id=248 data-nosnippet>248</a>        proof <span class="kw">fn </span>lemma_body_no_lookahead_inv_preservation(
+<a href=#249 id=249 data-nosnippet>249</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#250 id=250 data-nosnippet>250</a>            _param: (),
+<a href=#251 id=251 data-nosnippet>251</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#252 id=252 data-nosnippet>252</a>        ) {
+<a href=#253 id=253 data-nosnippet>253</a>            reveal(disjoint_domains);
 <a href=#254 id=254 data-nosnippet>254</a>        }
 <a href=#255 id=255 data-nosnippet>255</a>    }
 <a href=#256 id=256 data-nosnippet>256</a>
-<a href=#257 id=257 data-nosnippet>257</a>    <span class="kw">impl </span>NonMalleableRecBody <span class="kw">for </span>ULeb128RecBody&lt;<span class="bool-val">true</span>&gt; {
-<a href=#258 id=258 data-nosnippet>258</a>        proof <span class="kw">fn </span>lemma_body_nonmal_inv_preservation(
+<a href=#257 id=257 data-nosnippet>257</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; ProductiveRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#258 id=258 data-nosnippet>258</a>        proof <span class="kw">fn </span>lemma_body_productive_inv_preservation(
 <a href=#259 id=259 data-nosnippet>259</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#260 id=260 data-nosnippet>260</a>            _param: (),
+<a href=#260 id=260 data-nosnippet>260</a>            param: <span class="self">Self</span>::Param,
 <a href=#261 id=261 data-nosnippet>261</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
 <a href=#262 id=262 data-nosnippet>262</a>        ) {
 <a href=#263 id=263 data-nosnippet>263</a>        }
 <a href=#264 id=264 data-nosnippet>264</a>    }
 <a href=#265 id=265 data-nosnippet>265</a>
-<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; GoodSerializerRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#267 id=267 data-nosnippet>267</a>        proof <span class="kw">fn </span>lemma_s_body_serialize_inv_preservation(
+<a href=#266 id=266 data-nosnippet>266</a>    <span class="kw">impl </span>NonMalleableRecBody <span class="kw">for </span>ULeb128RecBody&lt;<span class="bool-val">true</span>&gt; {
+<a href=#267 id=267 data-nosnippet>267</a>        proof <span class="kw">fn </span>lemma_body_nonmal_inv_preservation(
 <a href=#268 id=268 data-nosnippet>268</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#269 id=269 data-nosnippet>269</a>            _param: (),
 <a href=#270 id=270 data-nosnippet>270</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
 <a href=#271 id=271 data-nosnippet>271</a>        ) {
-<a href=#272 id=272 data-nosnippet>272</a>        }
-<a href=#273 id=273 data-nosnippet>273</a>    }
-<a href=#274 id=274 data-nosnippet>274</a>
-<a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; NonTailFmtRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#276 id=276 data-nosnippet>276</a>        proof <span class="kw">fn </span>lemma_s_body_dps_serialize_dps_inv_preservation(
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#278 id=278 data-nosnippet>278</a>            _param: (),
-<a href=#279 id=279 data-nosnippet>279</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
-<a href=#280 id=280 data-nosnippet>280</a>        ) {
-<a href=#281 id=281 data-nosnippet>281</a>        }
-<a href=#282 id=282 data-nosnippet>282</a>    }
-<a href=#283 id=283 data-nosnippet>283</a>
-<a href=#284 id=284 data-nosnippet>284</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; SPRoundTripDpsRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#285 id=285 data-nosnippet>285</a>        proof <span class="kw">fn </span>lemma_body_sp_roundtrip_dps_inv_preservation(
-<a href=#286 id=286 data-nosnippet>286</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#287 id=287 data-nosnippet>287</a>            _param: (),
-<a href=#288 id=288 data-nosnippet>288</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
-<a href=#289 id=289 data-nosnippet>289</a>        ) {
-<a href=#290 id=290 data-nosnippet>290</a>            reveal(disjoint_domains);
-<a href=#291 id=291 data-nosnippet>291</a>        }
-<a href=#292 id=292 data-nosnippet>292</a>    }
-<a href=#293 id=293 data-nosnippet>293</a>
-<a href=#294 id=294 data-nosnippet>294</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; EquivSerializersGeneralRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
-<a href=#295 id=295 data-nosnippet>295</a>        proof <span class="kw">fn </span>lemma_s_body_equiv_general_inv_preservation(
-<a href=#296 id=296 data-nosnippet>296</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#297 id=297 data-nosnippet>297</a>            _param: (),
-<a href=#298 id=298 data-nosnippet>298</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
-<a href=#299 id=299 data-nosnippet>299</a>        ) {
-<a href=#300 id=300 data-nosnippet>300</a>        }
-<a href=#301 id=301 data-nosnippet>301</a>    }
-<a href=#302 id=302 data-nosnippet>302</a>
-<a href=#303 id=303 data-nosnippet>303</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; SafeParser <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#304 id=304 data-nosnippet>304</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#305 id=305 data-nosnippet>305</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_parse_safe(ibuf);
-<a href=#306 id=306 data-nosnippet>306</a>        }
-<a href=#307 id=307 data-nosnippet>307</a>    }
-<a href=#308 id=308 data-nosnippet>308</a>
-<a href=#309 id=309 data-nosnippet>309</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; Productive <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#310 id=310 data-nosnippet>310</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
-<a href=#311 id=311 data-nosnippet>311</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_productive(s);
+<a href=#272 id=272 data-nosnippet>272</a>            <span class="kw">let </span>body = <span class="self">self</span>.spec_body((), rec);
+<a href=#273 id=273 data-nosnippet>273</a>            assert(body.<span class="number">1</span>.inner.sound_inv());
+<a href=#274 id=274 data-nosnippet>274</a>            assert forall|i: (u8, nat)| <span class="attr">#[trigger] </span>body.<span class="number">1</span>.inner.consistent(i) implies (
+<a href=#275 id=275 data-nosnippet>275</a>            body.<span class="number">1</span>.mapper.<span class="number">1</span>)((body.<span class="number">1</span>.mapper.<span class="number">0</span>)(i)) == i by {
+<a href=#276 id=276 data-nosnippet>276</a>                assert(i.<span class="number">0 </span>&lt; <span class="number">128</span>);
+<a href=#277 id=277 data-nosnippet>277</a>                lemma_mod_multiples_vanish(i.<span class="number">1 </span><span class="kw">as </span>int, i.<span class="number">0 </span><span class="kw">as </span>int, <span class="number">128</span>);
+<a href=#278 id=278 data-nosnippet>278</a>                lemma_div_multiples_vanish_fancy(i.<span class="number">1 </span><span class="kw">as </span>int, i.<span class="number">0 </span><span class="kw">as </span>int, <span class="number">128</span>);
+<a href=#279 id=279 data-nosnippet>279</a>            }
+<a href=#280 id=280 data-nosnippet>280</a>            assert forall|v: nat| body.<span class="number">0</span>.consistent(v) &amp;&amp; body.<span class="number">1</span>.consistent(v) implies <span class="bool-val">false </span>by {
+<a href=#281 id=281 data-nosnippet>281</a>                assert(v &lt; <span class="number">128</span>);
+<a href=#282 id=282 data-nosnippet>282</a>                assert(body.<span class="number">1</span>.mapper.<span class="number">1</span>(v).<span class="number">1 </span>&gt; <span class="number">0</span>);
+<a href=#283 id=283 data-nosnippet>283</a>            }
+<a href=#284 id=284 data-nosnippet>284</a>        }
+<a href=#285 id=285 data-nosnippet>285</a>    }
+<a href=#286 id=286 data-nosnippet>286</a>
+<a href=#287 id=287 data-nosnippet>287</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; GoodSerializerRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#288 id=288 data-nosnippet>288</a>        proof <span class="kw">fn </span>lemma_s_body_serialize_inv_preservation(
+<a href=#289 id=289 data-nosnippet>289</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#290 id=290 data-nosnippet>290</a>            _param: (),
+<a href=#291 id=291 data-nosnippet>291</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#292 id=292 data-nosnippet>292</a>        ) {
+<a href=#293 id=293 data-nosnippet>293</a>        }
+<a href=#294 id=294 data-nosnippet>294</a>    }
+<a href=#295 id=295 data-nosnippet>295</a>
+<a href=#296 id=296 data-nosnippet>296</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; NonTailFmtRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#297 id=297 data-nosnippet>297</a>        proof <span class="kw">fn </span>lemma_s_body_dps_serialize_dps_inv_preservation(
+<a href=#298 id=298 data-nosnippet>298</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#299 id=299 data-nosnippet>299</a>            _param: (),
+<a href=#300 id=300 data-nosnippet>300</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#301 id=301 data-nosnippet>301</a>        ) {
+<a href=#302 id=302 data-nosnippet>302</a>        }
+<a href=#303 id=303 data-nosnippet>303</a>    }
+<a href=#304 id=304 data-nosnippet>304</a>
+<a href=#305 id=305 data-nosnippet>305</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; SPRoundTripDpsRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#306 id=306 data-nosnippet>306</a>        proof <span class="kw">fn </span>lemma_body_sp_roundtrip_dps_inv_preservation(
+<a href=#307 id=307 data-nosnippet>307</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#308 id=308 data-nosnippet>308</a>            _param: (),
+<a href=#309 id=309 data-nosnippet>309</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#310 id=310 data-nosnippet>310</a>        ) {
+<a href=#311 id=311 data-nosnippet>311</a>            reveal(disjoint_domains);
 <a href=#312 id=312 data-nosnippet>312</a>        }
 <a href=#313 id=313 data-nosnippet>313</a>    }
 <a href=#314 id=314 data-nosnippet>314</a>
-<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; SoundParser <span class="kw">for </span>ULeb128&lt;<span class="bool-val">true</span>, N&gt; {
-<a href=#316 id=316 data-nosnippet>316</a>        proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#317 id=317 data-nosnippet>317</a>            uleb128_fmt::&lt;<span class="bool-val">true</span>, N&gt;().lemma_parse_sound_consumption(ibuf);
-<a href=#318 id=318 data-nosnippet>318</a>        }
-<a href=#319 id=319 data-nosnippet>319</a>
-<a href=#320 id=320 data-nosnippet>320</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#321 id=321 data-nosnippet>321</a>            uleb128_fmt::&lt;<span class="bool-val">true</span>, N&gt;().lemma_parse_sound_value(ibuf);
-<a href=#322 id=322 data-nosnippet>322</a>        }
-<a href=#323 id=323 data-nosnippet>323</a>    }
-<a href=#324 id=324 data-nosnippet>324</a>
-<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; NonTailFmt <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#326 id=326 data-nosnippet>326</a>        proof <span class="kw">fn </span>lemma_serialize_dps_prepend(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
-<a href=#327 id=327 data-nosnippet>327</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_dps_prepend(v, obuf);
-<a href=#328 id=328 data-nosnippet>328</a>        }
+<a href=#315 id=315 data-nosnippet>315</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool&gt; EquivSerializersGeneralRecBody <span class="kw">for </span>ULeb128RecBody&lt;MINIMAL&gt; {
+<a href=#316 id=316 data-nosnippet>316</a>        proof <span class="kw">fn </span>lemma_s_body_equiv_general_inv_preservation(
+<a href=#317 id=317 data-nosnippet>317</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#318 id=318 data-nosnippet>318</a>            _param: (),
+<a href=#319 id=319 data-nosnippet>319</a>            rec: ParamRecSpecs&lt;<span class="self">Self</span>::Param, <span class="self">Self</span>::T&gt;,
+<a href=#320 id=320 data-nosnippet>320</a>        ) {
+<a href=#321 id=321 data-nosnippet>321</a>        }
+<a href=#322 id=322 data-nosnippet>322</a>    }
+<a href=#323 id=323 data-nosnippet>323</a>
+<a href=#324 id=324 data-nosnippet>324</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; SafeParser <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#325 id=325 data-nosnippet>325</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#326 id=326 data-nosnippet>326</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_parse_safe(ibuf);
+<a href=#327 id=327 data-nosnippet>327</a>        }
+<a href=#328 id=328 data-nosnippet>328</a>    }
 <a href=#329 id=329 data-nosnippet>329</a>
-<a href=#330 id=330 data-nosnippet>330</a>        proof <span class="kw">fn </span>lemma_serialize_dps_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
-<a href=#331 id=331 data-nosnippet>331</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_dps_len(v, obuf);
-<a href=#332 id=332 data-nosnippet>332</a>        }
-<a href=#333 id=333 data-nosnippet>333</a>    }
-<a href=#334 id=334 data-nosnippet>334</a>
-<a href=#335 id=335 data-nosnippet>335</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; GoodSerializer <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#336 id=336 data-nosnippet>336</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#337 id=337 data-nosnippet>337</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_len(v);
-<a href=#338 id=338 data-nosnippet>338</a>        }
-<a href=#339 id=339 data-nosnippet>339</a>    }
-<a href=#340 id=340 data-nosnippet>340</a>
-<a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; SPRoundTripDps <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#342 id=342 data-nosnippet>342</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
-<a href=#343 id=343 data-nosnippet>343</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().theorem_serialize_dps_parse_roundtrip(v, obuf);
-<a href=#344 id=344 data-nosnippet>344</a>        }
-<a href=#345 id=345 data-nosnippet>345</a>    }
-<a href=#346 id=346 data-nosnippet>346</a>
-<a href=#347 id=347 data-nosnippet>347</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; NoLookAhead <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#348 id=348 data-nosnippet>348</a>        proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
-<a href=#349 id=349 data-nosnippet>349</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_no_lookahead(i1, i2);
-<a href=#350 id=350 data-nosnippet>350</a>        }
-<a href=#351 id=351 data-nosnippet>351</a>    }
+<a href=#330 id=330 data-nosnippet>330</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; Productive <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#331 id=331 data-nosnippet>331</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
+<a href=#332 id=332 data-nosnippet>332</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_productive(s);
+<a href=#333 id=333 data-nosnippet>333</a>        }
+<a href=#334 id=334 data-nosnippet>334</a>    }
+<a href=#335 id=335 data-nosnippet>335</a>
+<a href=#336 id=336 data-nosnippet>336</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; SoundParser <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#337 id=337 data-nosnippet>337</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#338 id=338 data-nosnippet>338</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_parse_sound_value(ibuf);
+<a href=#339 id=339 data-nosnippet>339</a>        }
+<a href=#340 id=340 data-nosnippet>340</a>    }
+<a href=#341 id=341 data-nosnippet>341</a>
+<a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; StrictParser <span class="kw">for </span>ULeb128&lt;<span class="bool-val">true</span>, N&gt; {
+<a href=#343 id=343 data-nosnippet>343</a>        proof <span class="kw">fn </span>lemma_parse_strict_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#344 id=344 data-nosnippet>344</a>            uleb128_fmt::&lt;<span class="bool-val">true</span>, N&gt;().lemma_parse_strict_consumption(ibuf);
+<a href=#345 id=345 data-nosnippet>345</a>        }
+<a href=#346 id=346 data-nosnippet>346</a>    }
+<a href=#347 id=347 data-nosnippet>347</a>
+<a href=#348 id=348 data-nosnippet>348</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; NonTailFmt <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#349 id=349 data-nosnippet>349</a>        proof <span class="kw">fn </span>lemma_serialize_dps_prepend(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
+<a href=#350 id=350 data-nosnippet>350</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_dps_prepend(v, obuf);
+<a href=#351 id=351 data-nosnippet>351</a>        }
 <a href=#352 id=352 data-nosnippet>352</a>
-<a href=#353 id=353 data-nosnippet>353</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; NonMalleable <span class="kw">for </span>ULeb128&lt;<span class="bool-val">true</span>, N&gt; {
-<a href=#354 id=354 data-nosnippet>354</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
-<a href=#355 id=355 data-nosnippet>355</a>            uleb128_fmt::&lt;<span class="bool-val">true</span>, N&gt;().lemma_parse_non_malleable(buf1, buf2);
-<a href=#356 id=356 data-nosnippet>356</a>        }
-<a href=#357 id=357 data-nosnippet>357</a>    }
-<a href=#358 id=358 data-nosnippet>358</a>
-<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; EquivSerializersGeneral <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#360 id=360 data-nosnippet>360</a>        proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
-<a href=#361 id=361 data-nosnippet>361</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_equiv(v, obuf);
-<a href=#362 id=362 data-nosnippet>362</a>        }
-<a href=#363 id=363 data-nosnippet>363</a>    }
-<a href=#364 id=364 data-nosnippet>364</a>
-<a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; EquivSerializers <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
-<a href=#366 id=366 data-nosnippet>366</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#367 id=367 data-nosnippet>367</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_equiv_on_empty(v);
-<a href=#368 id=368 data-nosnippet>368</a>        }
-<a href=#369 id=369 data-nosnippet>369</a>    }
-<a href=#370 id=370 data-nosnippet>370</a>
-<a href=#371 id=371 data-nosnippet>371</a>}
-<a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>} <span class="comment">// verus!
+<a href=#353 id=353 data-nosnippet>353</a>        proof <span class="kw">fn </span>lemma_serialize_dps_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
+<a href=#354 id=354 data-nosnippet>354</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_dps_len(v, obuf);
+<a href=#355 id=355 data-nosnippet>355</a>        }
+<a href=#356 id=356 data-nosnippet>356</a>    }
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; GoodSerializer <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#359 id=359 data-nosnippet>359</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#360 id=360 data-nosnippet>360</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_len(v);
+<a href=#361 id=361 data-nosnippet>361</a>        }
+<a href=#362 id=362 data-nosnippet>362</a>    }
+<a href=#363 id=363 data-nosnippet>363</a>
+<a href=#364 id=364 data-nosnippet>364</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; SPRoundTripDps <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#365 id=365 data-nosnippet>365</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
+<a href=#366 id=366 data-nosnippet>366</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().theorem_serialize_dps_parse_roundtrip(v, obuf);
+<a href=#367 id=367 data-nosnippet>367</a>        }
+<a href=#368 id=368 data-nosnippet>368</a>    }
+<a href=#369 id=369 data-nosnippet>369</a>
+<a href=#370 id=370 data-nosnippet>370</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; NoLookAhead <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#371 id=371 data-nosnippet>371</a>        proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
+<a href=#372 id=372 data-nosnippet>372</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_no_lookahead(i1, i2);
+<a href=#373 id=373 data-nosnippet>373</a>        }
+<a href=#374 id=374 data-nosnippet>374</a>    }
+<a href=#375 id=375 data-nosnippet>375</a>
+<a href=#376 id=376 data-nosnippet>376</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>N: usize&gt; NonMalleable <span class="kw">for </span>ULeb128&lt;<span class="bool-val">true</span>, N&gt; {
+<a href=#377 id=377 data-nosnippet>377</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
+<a href=#378 id=378 data-nosnippet>378</a>            uleb128_fmt::&lt;<span class="bool-val">true</span>, N&gt;().lemma_parse_non_malleable(buf1, buf2);
+<a href=#379 id=379 data-nosnippet>379</a>        }
+<a href=#380 id=380 data-nosnippet>380</a>    }
+<a href=#381 id=381 data-nosnippet>381</a>
+<a href=#382 id=382 data-nosnippet>382</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; EquivSerializersGeneral <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#383 id=383 data-nosnippet>383</a>        proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
+<a href=#384 id=384 data-nosnippet>384</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_equiv(v, obuf);
+<a href=#385 id=385 data-nosnippet>385</a>        }
+<a href=#386 id=386 data-nosnippet>386</a>    }
+<a href=#387 id=387 data-nosnippet>387</a>
+<a href=#388 id=388 data-nosnippet>388</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>MINIMAL: bool, <span class="kw">const </span>N: usize&gt; EquivSerializers <span class="kw">for </span>ULeb128&lt;MINIMAL, N&gt; {
+<a href=#389 id=389 data-nosnippet>389</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#390 id=390 data-nosnippet>390</a>            uleb128_fmt::&lt;MINIMAL, N&gt;().lemma_serialize_equiv_on_empty(v);
+<a href=#391 id=391 data-nosnippet>391</a>        }
+<a href=#392 id=392 data-nosnippet>392</a>    }
+<a href=#393 id=393 data-nosnippet>393</a>
+<a href=#394 id=394 data-nosnippet>394</a>}
+<a href=#395 id=395 data-nosnippet>395</a>
+<a href=#396 id=396 data-nosnippet>396</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

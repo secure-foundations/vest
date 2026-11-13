@@ -1,7 +1,157 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Macros for implementing verified nominal ASN.1 formats. Implementations for generated nominal ASN.1 format types."><title>vest_lib::asn1::macros - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module macros</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../vest_lib/index.html">vest_<wbr>lib</a></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module macros</a></h2><h3><a href="#macros">Module Items</a></h3><ul class="block"><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In vest_<wbr>lib::<wbr>asn1</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">vest_lib</a>::<wbr><a href="../index.html">asn1</a></div><h1>Module <span>macros</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/vest_lib/asn1/macros/mod.rs.html#1-739">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Macros for implementing verified nominal ASN.1 formats.
-Implementations for generated nominal ASN.1 format types.</p>
-<p>These macros are exported at the crate root as <a href="../../macro.impl_der.html" title="macro vest_lib::impl_der"><code>impl_der!</code></a> and <a href="../../macro.impl_ber.html" title="macro vest_lib::impl_ber"><code>impl_ber!</code></a>. A generated
-nominal format supplies a duel spec-exec <code>schema()</code> constructor. Tagged formats
-additionally store their outer tag class and number in tuple fields <code>0</code> and <code>1</code>; the macros
-apply that effective tag when constructing the inner format.</p>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Macros for implementing verified nominal ASN.1 formats. Verified nominal wrappers for ASN.1 schemas."><title>vest_lib::asn1::macros - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="vest_lib" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module macros</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../vest_lib/index.html">vest_<wbr>lib</a></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module macros</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#what-the-caller-supplies" title="What the caller supplies">What the caller supplies</a></li><li><a href="#example-a-retaggable-der-boolean" title="Example: a retaggable DER BOOLEAN">Example: a retaggable DER BOOLEAN</a></li><li><a href="#format-kinds" title="Format kinds">Format kinds</a><ul><li><a href="#a-replaceable-outer-tag-tagform" title="A replaceable outer tag: `tag(form)`">A replaceable outer tag: <code>tag(form)</code></a></li><li><a href="#a-fixed-start-domain-startsdomain" title="A fixed start domain: `starts(domain)`">A fixed start domain: <code>starts(domain)</code></a></li></ul></li><li><a href="#der-and-ber" title="DER and BER">DER and BER</a></li><li><a href="#proof-boundaries-and-maintenance" title="Proof boundaries and maintenance">Proof boundaries and maintenance</a></li></ul><h3><a href="#macros">Module Items</a></h3><ul class="block"><li><a href="#macros" title="Macros">Macros</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="../index.html">In vest_<wbr>lib::<wbr>asn1</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">vest_lib</a>::<wbr><a href="../index.html">asn1</a></div><h1>Module <span>macros</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/vest_lib/asn1/macros/mod.rs.html#1-265">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Macros for implementing verified nominal ASN.1 formats.
+Verified nominal wrappers for ASN.1 schemas.</p>
+<p><a href="../../macro.impl_der.html" title="macro vest_lib::impl_der"><code>impl_der!</code></a> and <a href="../../macro.impl_ber.html" title="macro vest_lib::impl_ber"><code>impl_ber!</code></a> turn a schema
+built from combinators into a named format with its own specifications,
+proofs, and executable APIs. <code>vest_asn1</code> emits these macro invocations.</p>
+<h2 id="what-the-caller-supplies"><a class="doc-anchor" href="#what-the-caller-supplies">§</a>What the caller supplies</h2>
+<p>The invocation names the format kind, value ownership, nominal format type,
+inner combinator type, specification value type, and executable value type:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">vest_lib::impl_der!</span>(
+    tag(constructed), borrowed,
+    HEADER, HEADER__, HeaderSpec, Header,
+    HeaderForward, HeaderReverse
+);</code></pre></div>
+<p><code>borrowed</code> means the executable type is <code>Header&lt;'i&gt;</code>; pass just <code>Header</code>.
+<code>owned</code> takes a complete type with no input lifetime, such as <code>bool</code> or <code>Vec&lt;u8&gt;</code>.
+The optional final arguments name the forward and reverse mappers of a
+structural <code>Mapped&lt;_, BiMap&lt;_, _&gt;&gt;</code>. Its specification value type supplies
+<code>lemma_into_from</code> for the mapper’s losslessness proof. Omit these arguments
+for primitive formats and named aliases.</p>
+<p>The format must provide a <code>schema()</code> constructor usable in both specification
+and executable code, and <code>lemma_schema_unambiguous</code> proving the inner format’s
+<code>unambiguous()</code> condition. Certified start domains also require that lemma to
+equate the inner and nominal <code>asn1_start()</code> domains, as in the example below.</p>
+<h2 id="example-a-retaggable-der-boolean"><a class="doc-anchor" href="#example-a-retaggable-der-boolean">§</a>Example: a retaggable DER BOOLEAN</h2>
+<p>This is a small version of the code emitted for <code>Flag ::= BOOLEAN</code>:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="kw">use </span>vest_lib::asn1::<span class="kw-2">*</span>;
+<span class="kw">use </span>vest_lib::asn1::der_ord::DerState;
+<span class="attr">#[cfg(verus_keep_ghost)]
+</span><span class="kw">use </span>vest_lib::asn1::disjoint::{
+    asn1_start_exact_uint, lemma_asn1_start_exact_uint, HasAsn1Start,
+};
+<span class="kw">use </span>vest_lib::prelude::<span class="kw-2">*</span>;
+
+<span class="macro">verus!</span> {
+<span class="attr">#[derive(Clone, Copy)]
+</span><span class="kw">pub struct </span>FlagFmt(<span class="kw">pub </span>Class, <span class="kw">pub </span>u64);
+
+<span class="kw">impl </span>FlagFmt {
+    <span class="kw">pub const </span>Fmt: <span class="self">Self </span>= <span class="self">Self</span>(Class::Universal, <span class="number">1</span>);
+
+    <span class="attr">#[verifier::allow_in_spec]
+    </span><span class="kw">pub const fn </span>schema() -&gt; BoolTlvFmt
+        returns BOOLEAN,
+    {
+        BOOLEAN
+    }
+
+    proof <span class="kw">fn </span>lemma_schema_unambiguous(<span class="kw-2">&amp;</span><span class="self">self</span>)
+        ensures
+            <span class="self">self</span>.spec_inner().unambiguous(),
+            <span class="self">self</span>.spec_inner().asn1_start() == <span class="self">self</span>.asn1_start(),
+    {
+        reveal(asn1_start_exact_uint);
+        lemma_asn1_start_exact_uint(<span class="self">self</span>.<span class="number">0</span>, <span class="bool-val">false</span>, <span class="self">self</span>.<span class="number">1</span>);
+    }
+}
+} <span class="comment">// verus!
+
+</span><span class="macro">vest_lib::impl_der!</span>(tag(primitive), owned, FlagFmt, BoolTlvFmt, bool, bool);
+<span class="comment">// FlagFmt::Fmt.parse(...), .prepare(...), .serialize(...), and .length(...)
+// are now available, together with the proof traits.</span></code></pre></div><h2 id="format-kinds"><a class="doc-anchor" href="#format-kinds">§</a>Format kinds</h2>
+<p>A named ASN.1 format needs two pieces of tagging information:
+(1). whether its outer tag can be replaced (for IMPLICIT retagging);
+and (2). which tags (start_domain) are allowed in a successful parse.
+The latter lets Vest prove that CHOICE branches, or an OPTIONAL/DEFAULT field and its
+continuation, are disjoint without unfolding their schemas. The format kind
+selects the <code>Retaggable</code> implementation and the <code>HasAsn1Start</code> certificate.</p>
+<p>An ASN.1 identifier carries a class, a primitive/constructed bit, and a tag
+number. For example, <code>BOOLEAN</code> has universal primitive tag 1 (<code>01</code>), while
+<code>SEQUENCE(...)</code> has universal constructed tag 16 (<code>30</code>). Identifier octets
+below are hexadecimal. Vest supports:</p>
+<ul>
+<li><strong>IMPLICIT tagging:</strong> replace the outer class and number, preserving the
+content’s primitive/constructed form. <code>IMPLICIT(0, BOOLEAN)</code> starts with
+context-specific primitive tag 0 (<code>80</code>), not the BOOLEAN identifier <code>01</code>.</li>
+<li><strong>EXPLICIT tagging:</strong> add a constructed TLV around the complete inner TLV.
+<code>EXPLICIT(0, BOOLEAN)</code> starts with <code>a0</code> and retains the inner <code>01</code> identifier.
+This also gives CHOICE and ANY, which have no single outer tag to replace,
+a retaggable envelope.</li>
+</ul>
+<p>These constructors use the context-specific class; their <code>_APPLICATION</code> and
+<code>_PRIVATE</code> variants select those classes instead. <code>Retaggable</code> lifts through
+<code>Ref</code>, <code>Refined</code>, and <code>Mapped</code>, so constraints and value mappings do not prevent
+replacing the enclosing format’s tag.</p>
+<h3 id="a-replaceable-outer-tag-tagform"><a class="doc-anchor" href="#a-replaceable-outer-tag-tagform">§</a>A replaceable outer tag: <code>tag(form)</code></h3>
+<p>These formats have one replaceable outer class and number. The form selects
+whether the start certificate permits primitive, constructed, or both kinds
+of identifiers:</p>
+<ul>
+<li><strong><code>tag(primitive)</code></strong>: <code>Flag ::= BOOLEAN</code> has universal primitive tag 1 (<code>01</code>).
+DER <code>Payload ::= OCTET STRING</code> also uses this kind, with identifier <code>04</code>.</li>
+<li><strong><code>tag(constructed)</code></strong>: <code>Record ::= SEQUENCE { flag BOOLEAN }</code> has universal
+constructed tag 16 (<code>30</code>). An EXPLICIT envelope also uses this kind:
+<code>[0] EXPLICIT BOOLEAN</code> starts with constructed identifier <code>a0</code>.</li>
+<li><strong><code>tag(either)</code></strong>: BER <code>Payload ::= OCTET STRING</code> accepts primitive <code>04</code> and
+constructed <code>24</code>. After <code>IMPLICIT(0, PAYLOAD::Fmt)</code>, the corresponding
+identifiers are <code>80</code> and <code>a0</code>. The schema handles normalization of the
+serialized form; there is no separate constructed-bit argument.</li>
+</ul>
+<p>The kind describes the schema’s accepted forms; it does not change the
+schema’s parser or enable constructed encodings by itself.</p>
+<h3 id="a-fixed-start-domain-startsdomain"><a class="doc-anchor" href="#a-fixed-start-domain-startsdomain">§</a>A fixed start domain: <code>starts(domain)</code></h3>
+<p>CHOICE and ANY have no single outer tag to replace. Their nominal types are
+zero-sized and expose a start-domain certificate, without implementing
+<code>Retaggable</code>. Both use <code>starts(domain)</code>:</p>
+<ul>
+<li><code>Selection ::= CHOICE { flag BOOLEAN, count INTEGER }</code> can start with <code>01</code>
+or <code>02</code>, so it uses <code>starts(asn1_start_mask(false, 0x6u64, 0, 0, 0))</code>.
+Bits 1 and 2 of the universal-class bitmap are set; the selected alternative
+supplies the identifier, not CHOICE itself.</li>
+<li><code>OpenValue ::= ANY</code> uses <code>starts(asn1_start_any_non_eoc())</code>. It can accept,
+for example, an INTEGER TLV beginning with <code>02</code> or a SEQUENCE beginning
+with <code>30</code>, but not standalone end-of-contents (<code>00 00</code>). This is an ordinary
+start-domain expression, not a separate ANY-specific macro kind.</li>
+</ul>
+<p>Start-domain masks describe identifier leading octets conservatively; distinct
+high tag numbers can share a bit. See
+<a href="../disjoint/struct.Asn1StartDomain.html" title="struct vest_lib::asn1::disjoint::Asn1StartDomain"><code>Asn1StartDomain</code></a> for that limitation.</p>
+<h2 id="der-and-ber"><a class="doc-anchor" href="#der-and-ber">§</a>DER and BER</h2>
+<p>Both macros implement the codec specifications, <code>SafeParser</code>, <code>SoundParser</code>,
+<code>Productive</code>, <code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>SPRoundTripDps</code>, both serializer
+equivalence traits, and the executable <code>Parser</code>, <code>Serializer</code>, <code>Prepare</code>, and
+<code>ByteLen</code> APIs. DER additionally implements <code>StrictParser</code>, <code>NonMalleable</code>, and
+allocation-free <code>DerOrd</code>. The inner format must support the delegated traits.</p>
+<p>For a BER schema, use BER combinators in <code>schema()</code> and invoke <code>impl_ber!</code>:</p>
+
+<div class="example-wrap ignore"><a href="#" class="tooltip" title="This example is not tested">ⓘ</a><pre class="rust rust-example-rendered"><code><span class="macro">vest_lib::impl_ber!</span>(
+    tag(constructed), borrowed,
+    ITEM, ITEM__, ItemSpec, Item,
+    ItemForward, ItemReverse
+);</code></pre></div>
+<p>Changing the macro alone does not change the schema’s encoding rules. BER
+does not generally preserve encoded length or have a unique encoding, so its
+macro does not add <code>StrictParser</code>, <code>NonMalleable</code>, or <code>DerOrd</code> implementations.</p>
+<h2 id="proof-boundaries-and-maintenance"><a class="doc-anchor" href="#proof-boundaries-and-maintenance">§</a>Proof boundaries and maintenance</h2>
+<p>The nominal specifications are opaque. Proofs reveal only the operations they
+delegate, and establish the inner invariants locally. The nominal invariants
+retain their default <code>true</code> definitions: parents use the proved properties
+without rechecking the child’s combinator tree.</p>
+<p>Mapped BER parsing also hides the closure-backed wire parser, while leaving
+the structural <code>BiMap</code> visible. This is deliberately narrower than hiding all
+<code>Mapped</code> parsers or child formats. Scoped equality proofs in <code>parse</code> and
+<code>lemma_serialize_len</code> likewise avoid exposing a whole schema to the solver.</p>
+<p>Implementation responsibilities are separated into four files:</p>
+<ul>
+<li><code>schema.rs</code>: inner constructors, retagging, and start-domain certificates.</li>
+<li><code>proofs.rs</code>: opaque specifications and common / DER / BER proof traits.</li>
+<li><code>exec.rs</code>: shared borrowed/owned executable delegation.</li>
+<li><code>der_ord.rs</code>: shared borrowed/owned DER ordering delegation.</li>
+</ul>
+<p>This file only assembles those pieces. Internal helper macros are exported
+because public macros must resolve them from other crates; they are not a
+supported interface. Changes should be checked against the ASN.1 width,
+depth, mixed-rule, and CMS fixtures, not just a primitive example.</p>
 </div></details><h2 id="macros" class="section-header">Macros<a href="#macros" class="anchor">§</a></h2><dl class="item-table"><dt><a class="macro" href="macro.impl_ber.html" title="macro vest_lib::asn1::macros::impl_ber">impl_<wbr>ber</a></dt><dd>Implements the verified BER traits and executable APIs for a generated nominal format.</dd><dt><a class="macro" href="macro.impl_der.html" title="macro vest_lib::asn1::macros::impl_der">impl_<wbr>der</a></dt><dd>Implements the verified DER traits and executable APIs for a generated nominal format.</dd></dl></section></div></main></body></html>

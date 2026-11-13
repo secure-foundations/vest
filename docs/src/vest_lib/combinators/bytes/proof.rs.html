@@ -190,104 +190,105 @@
 <a href=#190 id=190 data-nosnippet>190</a>}
 <a href=#191 id=191 data-nosnippet>191</a>
 <a href=#192 id=192 data-nosnippet>192</a><span class="kw">impl</span>&lt;A, Then&gt; NonMalleable <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
-<a href=#193 id=193 data-nosnippet>193</a>    </span>A: BytesCombinator + SoundParser + NonMalleable,
+<a href=#193 id=193 data-nosnippet>193</a>    </span>A: BytesCombinator + StrictParser + NonMalleable,
 <a href=#194 id=194 data-nosnippet>194</a>    Then: NonMalleable,
 <a href=#195 id=195 data-nosnippet>195</a> {
 <a href=#196 id=196 data-nosnippet>196</a>    open spec <span class="kw">fn </span>nonmal_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#197 id=197 data-nosnippet>197</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.nonmal_inv()
 <a href=#198 id=198 data-nosnippet>198</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.sound_inv()
-<a href=#199 id=199 data-nosnippet>199</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.nonmal_inv()
-<a href=#200 id=200 data-nosnippet>200</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.safe_inv()
-<a href=#201 id=201 data-nosnippet>201</a>    }
-<a href=#202 id=202 data-nosnippet>202</a>
-<a href=#203 id=203 data-nosnippet>203</a>    proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
-<a href=#204 id=204 data-nosnippet>204</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, v1)) = <span class="self">self</span>.spec_parse(buf1) {
-<a href=#205 id=205 data-nosnippet>205</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n2, v2)) = <span class="self">self</span>.spec_parse(buf2) {
-<a href=#206 id=206 data-nosnippet>206</a>                <span class="kw">if </span>v1 == v2 {
-<a href=#207 id=207 data-nosnippet>207</a>                    <span class="kw">let </span>(n1a, chunk1) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(buf1)-&gt;<span class="number">0</span>;
-<a href=#208 id=208 data-nosnippet>208</a>                    <span class="kw">let </span>(n2a, chunk2) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(buf2)-&gt;<span class="number">0</span>;
-<a href=#209 id=209 data-nosnippet>209</a>                    <span class="kw">let </span>(n1b, v1b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(chunk1)-&gt;<span class="number">0</span>;
-<a href=#210 id=210 data-nosnippet>210</a>                    <span class="kw">let </span>(n2b, v2b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(chunk2)-&gt;<span class="number">0</span>;
-<a href=#211 id=211 data-nosnippet>211</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_sound_consumption(buf1);
-<a href=#212 id=212 data-nosnippet>212</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_sound_consumption(buf2);
-<a href=#213 id=213 data-nosnippet>213</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_byte_len_is_buf_len(chunk1);
-<a href=#214 id=214 data-nosnippet>214</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_byte_len_is_buf_len(chunk2);
-<a href=#215 id=215 data-nosnippet>215</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_non_malleable(buf1, buf2);
-<a href=#216 id=216 data-nosnippet>216</a>                    <span class="self">self</span>.<span class="number">1</span>.lemma_parse_non_malleable(chunk1, chunk2);
-<a href=#217 id=217 data-nosnippet>217</a>                    assert(n1 == n1a &amp;&amp; n2 == n2a);
-<a href=#218 id=218 data-nosnippet>218</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk2[<span class="number">0</span>..n2a]);
-<a href=#219 id=219 data-nosnippet>219</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk1);
-<a href=#220 id=220 data-nosnippet>220</a>                    assert(chunk2[<span class="number">0</span>..n2a] == chunk2);
-<a href=#221 id=221 data-nosnippet>221</a>                    assert(chunk1 == chunk2);
-<a href=#222 id=222 data-nosnippet>222</a>                    assert(buf1[<span class="number">0</span>..n1a] == buf2[<span class="number">0</span>..n2a]);
-<a href=#223 id=223 data-nosnippet>223</a>                }
-<a href=#224 id=224 data-nosnippet>224</a>            }
-<a href=#225 id=225 data-nosnippet>225</a>        }
-<a href=#226 id=226 data-nosnippet>226</a>    }
-<a href=#227 id=227 data-nosnippet>227</a>}
-<a href=#228 id=228 data-nosnippet>228</a>
-<a href=#229 id=229 data-nosnippet>229</a><span class="kw">impl</span>&lt;A, Then&gt; NoLookAhead <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
-<a href=#230 id=230 data-nosnippet>230</a>    </span>A: BytesCombinator + NoLookAhead&lt;PVal = Seq&lt;u8&gt;&gt;,
-<a href=#231 id=231 data-nosnippet>231</a>    Then: SafeParser,
-<a href=#232 id=232 data-nosnippet>232</a> {
-<a href=#233 id=233 data-nosnippet>233</a>    open spec <span class="kw">fn </span>no_lookahead_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#234 id=234 data-nosnippet>234</a>        <span class="self">self</span>.<span class="number">0</span>.no_lookahead_inv()
-<a href=#235 id=235 data-nosnippet>235</a>    }
-<a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
-<a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
-<a href=#239 id=239 data-nosnippet>239</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
-<a href=#240 id=240 data-nosnippet>240</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
-<a href=#241 id=241 data-nosnippet>241</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
-<a href=#242 id=242 data-nosnippet>242</a>                }
-<a href=#243 id=243 data-nosnippet>243</a>            }
-<a href=#244 id=244 data-nosnippet>244</a>        }
-<a href=#245 id=245 data-nosnippet>245</a>    }
-<a href=#246 id=246 data-nosnippet>246</a>}
-<a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a><span class="kw">impl</span>&lt;A, Then&gt; Productive <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
-<a href=#249 id=249 data-nosnippet>249</a>    </span>A: BytesCombinator + Productive&lt;PVal = Seq&lt;u8&gt;&gt;,
-<a href=#250 id=250 data-nosnippet>250</a>    Then: SafeParser,
-<a href=#251 id=251 data-nosnippet>251</a> {
-<a href=#252 id=252 data-nosnippet>252</a>    open spec <span class="kw">fn </span>productive_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#253 id=253 data-nosnippet>253</a>        <span class="self">self</span>.<span class="number">0</span>.productive_inv()
-<a href=#254 id=254 data-nosnippet>254</a>    }
-<a href=#255 id=255 data-nosnippet>255</a>
-<a href=#256 id=256 data-nosnippet>256</a>    proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
-<a href=#257 id=257 data-nosnippet>257</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_productive(s);
-<a href=#258 id=258 data-nosnippet>258</a>    }
-<a href=#259 id=259 data-nosnippet>259</a>}
-<a href=#260 id=260 data-nosnippet>260</a>
-<a href=#261 id=261 data-nosnippet>261</a><span class="kw">impl</span>&lt;A, Then&gt; EquivSerializersGeneral <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
-<a href=#262 id=262 data-nosnippet>262</a>    </span>A: EquivSerializersGeneral&lt;SVal = Seq&lt;u8&gt;, SValue = Seq&lt;u8&gt;&gt;,
-<a href=#263 id=263 data-nosnippet>263</a>    Then: EquivSerializers,
-<a href=#264 id=264 data-nosnippet>264</a> {
-<a href=#265 id=265 data-nosnippet>265</a>    open spec <span class="kw">fn </span>equiv_general_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#266 id=266 data-nosnippet>266</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.equiv_general_inv()
-<a href=#267 id=267 data-nosnippet>267</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.equiv_inv()
-<a href=#268 id=268 data-nosnippet>268</a>    }
-<a href=#269 id=269 data-nosnippet>269</a>
-<a href=#270 id=270 data-nosnippet>270</a>    proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
-<a href=#271 id=271 data-nosnippet>271</a>        <span class="kw">let </span>inner_bytes = <span class="self">self</span>.<span class="number">1</span>.spec_serialize(v);
-<a href=#272 id=272 data-nosnippet>272</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_serialize_equiv(inner_bytes, obuf);
-<a href=#273 id=273 data-nosnippet>273</a>        <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_equiv_on_empty(v);
-<a href=#274 id=274 data-nosnippet>274</a>    }
-<a href=#275 id=275 data-nosnippet>275</a>}
-<a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a><span class="kw">impl</span>&lt;A, Then&gt; EquivSerializers <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
-<a href=#278 id=278 data-nosnippet>278</a>    </span>A: EquivSerializers&lt;SVal = Seq&lt;u8&gt;, SValue = Seq&lt;u8&gt;&gt;,
-<a href=#279 id=279 data-nosnippet>279</a>    Then: EquivSerializers,
-<a href=#280 id=280 data-nosnippet>280</a> {
-<a href=#281 id=281 data-nosnippet>281</a>    open spec <span class="kw">fn </span>equiv_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#282 id=282 data-nosnippet>282</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.equiv_inv()
-<a href=#283 id=283 data-nosnippet>283</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.equiv_inv()
-<a href=#284 id=284 data-nosnippet>284</a>    }
-<a href=#285 id=285 data-nosnippet>285</a>
-<a href=#286 id=286 data-nosnippet>286</a>    proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#287 id=287 data-nosnippet>287</a>        <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_equiv_on_empty(v);
-<a href=#288 id=288 data-nosnippet>288</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_serialize_equiv_on_empty(<span class="self">self</span>.<span class="number">1</span>.spec_serialize(v));
-<a href=#289 id=289 data-nosnippet>289</a>    }
-<a href=#290 id=290 data-nosnippet>290</a>}
-<a href=#291 id=291 data-nosnippet>291</a>
-<a href=#292 id=292 data-nosnippet>292</a>} <span class="comment">// verus!
+<a href=#199 id=199 data-nosnippet>199</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.strict_inv()
+<a href=#200 id=200 data-nosnippet>200</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.nonmal_inv()
+<a href=#201 id=201 data-nosnippet>201</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.safe_inv()
+<a href=#202 id=202 data-nosnippet>202</a>    }
+<a href=#203 id=203 data-nosnippet>203</a>
+<a href=#204 id=204 data-nosnippet>204</a>    proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
+<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n1, v1)) = <span class="self">self</span>.spec_parse(buf1) {
+<a href=#206 id=206 data-nosnippet>206</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>((n2, v2)) = <span class="self">self</span>.spec_parse(buf2) {
+<a href=#207 id=207 data-nosnippet>207</a>                <span class="kw">if </span>v1 == v2 {
+<a href=#208 id=208 data-nosnippet>208</a>                    <span class="kw">let </span>(n1a, chunk1) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(buf1)-&gt;<span class="number">0</span>;
+<a href=#209 id=209 data-nosnippet>209</a>                    <span class="kw">let </span>(n2a, chunk2) = <span class="self">self</span>.<span class="number">0</span>.spec_parse(buf2)-&gt;<span class="number">0</span>;
+<a href=#210 id=210 data-nosnippet>210</a>                    <span class="kw">let </span>(n1b, v1b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(chunk1)-&gt;<span class="number">0</span>;
+<a href=#211 id=211 data-nosnippet>211</a>                    <span class="kw">let </span>(n2b, v2b) = <span class="self">self</span>.<span class="number">1</span>.spec_parse(chunk2)-&gt;<span class="number">0</span>;
+<a href=#212 id=212 data-nosnippet>212</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_strict_consumption(buf1);
+<a href=#213 id=213 data-nosnippet>213</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_strict_consumption(buf2);
+<a href=#214 id=214 data-nosnippet>214</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_byte_len_is_buf_len(chunk1);
+<a href=#215 id=215 data-nosnippet>215</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_byte_len_is_buf_len(chunk2);
+<a href=#216 id=216 data-nosnippet>216</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_parse_non_malleable(buf1, buf2);
+<a href=#217 id=217 data-nosnippet>217</a>                    <span class="self">self</span>.<span class="number">1</span>.lemma_parse_non_malleable(chunk1, chunk2);
+<a href=#218 id=218 data-nosnippet>218</a>                    assert(n1 == n1a &amp;&amp; n2 == n2a);
+<a href=#219 id=219 data-nosnippet>219</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk2[<span class="number">0</span>..n2a]);
+<a href=#220 id=220 data-nosnippet>220</a>                    assert(chunk1[<span class="number">0</span>..n1a] == chunk1);
+<a href=#221 id=221 data-nosnippet>221</a>                    assert(chunk2[<span class="number">0</span>..n2a] == chunk2);
+<a href=#222 id=222 data-nosnippet>222</a>                    assert(chunk1 == chunk2);
+<a href=#223 id=223 data-nosnippet>223</a>                    assert(buf1[<span class="number">0</span>..n1a] == buf2[<span class="number">0</span>..n2a]);
+<a href=#224 id=224 data-nosnippet>224</a>                }
+<a href=#225 id=225 data-nosnippet>225</a>            }
+<a href=#226 id=226 data-nosnippet>226</a>        }
+<a href=#227 id=227 data-nosnippet>227</a>    }
+<a href=#228 id=228 data-nosnippet>228</a>}
+<a href=#229 id=229 data-nosnippet>229</a>
+<a href=#230 id=230 data-nosnippet>230</a><span class="kw">impl</span>&lt;A, Then&gt; NoLookAhead <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
+<a href=#231 id=231 data-nosnippet>231</a>    </span>A: BytesCombinator + NoLookAhead&lt;PVal = Seq&lt;u8&gt;&gt;,
+<a href=#232 id=232 data-nosnippet>232</a>    Then: SafeParser,
+<a href=#233 id=233 data-nosnippet>233</a> {
+<a href=#234 id=234 data-nosnippet>234</a>    open spec <span class="kw">fn </span>no_lookahead_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="self">self</span>.<span class="number">0</span>.no_lookahead_inv()
+<a href=#236 id=236 data-nosnippet>236</a>    }
+<a href=#237 id=237 data-nosnippet>237</a>
+<a href=#238 id=238 data-nosnippet>238</a>    proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
+<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>((n, v)) = <span class="self">self</span>.spec_parse(i1) {
+<a href=#240 id=240 data-nosnippet>240</a>            <span class="kw">if </span><span class="number">0 </span>&lt;= n &lt;= i2.len() {
+<a href=#241 id=241 data-nosnippet>241</a>                <span class="kw">if </span>i2[<span class="number">0</span>..n] == i1[<span class="number">0</span>..n] {
+<a href=#242 id=242 data-nosnippet>242</a>                    <span class="self">self</span>.<span class="number">0</span>.lemma_no_lookahead(i1, i2);
+<a href=#243 id=243 data-nosnippet>243</a>                }
+<a href=#244 id=244 data-nosnippet>244</a>            }
+<a href=#245 id=245 data-nosnippet>245</a>        }
+<a href=#246 id=246 data-nosnippet>246</a>    }
+<a href=#247 id=247 data-nosnippet>247</a>}
+<a href=#248 id=248 data-nosnippet>248</a>
+<a href=#249 id=249 data-nosnippet>249</a><span class="kw">impl</span>&lt;A, Then&gt; Productive <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
+<a href=#250 id=250 data-nosnippet>250</a>    </span>A: BytesCombinator + Productive&lt;PVal = Seq&lt;u8&gt;&gt;,
+<a href=#251 id=251 data-nosnippet>251</a>    Then: SafeParser,
+<a href=#252 id=252 data-nosnippet>252</a> {
+<a href=#253 id=253 data-nosnippet>253</a>    open spec <span class="kw">fn </span>productive_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#254 id=254 data-nosnippet>254</a>        <span class="self">self</span>.<span class="number">0</span>.productive_inv()
+<a href=#255 id=255 data-nosnippet>255</a>    }
+<a href=#256 id=256 data-nosnippet>256</a>
+<a href=#257 id=257 data-nosnippet>257</a>    proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
+<a href=#258 id=258 data-nosnippet>258</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_productive(s);
+<a href=#259 id=259 data-nosnippet>259</a>    }
+<a href=#260 id=260 data-nosnippet>260</a>}
+<a href=#261 id=261 data-nosnippet>261</a>
+<a href=#262 id=262 data-nosnippet>262</a><span class="kw">impl</span>&lt;A, Then&gt; EquivSerializersGeneral <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
+<a href=#263 id=263 data-nosnippet>263</a>    </span>A: EquivSerializersGeneral&lt;SVal = Seq&lt;u8&gt;, SValue = Seq&lt;u8&gt;&gt;,
+<a href=#264 id=264 data-nosnippet>264</a>    Then: EquivSerializers,
+<a href=#265 id=265 data-nosnippet>265</a> {
+<a href=#266 id=266 data-nosnippet>266</a>    open spec <span class="kw">fn </span>equiv_general_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#267 id=267 data-nosnippet>267</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.equiv_general_inv()
+<a href=#268 id=268 data-nosnippet>268</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.equiv_inv()
+<a href=#269 id=269 data-nosnippet>269</a>    }
+<a href=#270 id=270 data-nosnippet>270</a>
+<a href=#271 id=271 data-nosnippet>271</a>    proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
+<a href=#272 id=272 data-nosnippet>272</a>        <span class="kw">let </span>inner_bytes = <span class="self">self</span>.<span class="number">1</span>.spec_serialize(v);
+<a href=#273 id=273 data-nosnippet>273</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_serialize_equiv(inner_bytes, obuf);
+<a href=#274 id=274 data-nosnippet>274</a>        <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_equiv_on_empty(v);
+<a href=#275 id=275 data-nosnippet>275</a>    }
+<a href=#276 id=276 data-nosnippet>276</a>}
+<a href=#277 id=277 data-nosnippet>277</a>
+<a href=#278 id=278 data-nosnippet>278</a><span class="kw">impl</span>&lt;A, Then&gt; EquivSerializers <span class="kw">for </span><span class="kw">super</span>::AndThen&lt;A, Then&gt; <span class="kw">where
+<a href=#279 id=279 data-nosnippet>279</a>    </span>A: EquivSerializers&lt;SVal = Seq&lt;u8&gt;, SValue = Seq&lt;u8&gt;&gt;,
+<a href=#280 id=280 data-nosnippet>280</a>    Then: EquivSerializers,
+<a href=#281 id=281 data-nosnippet>281</a> {
+<a href=#282 id=282 data-nosnippet>282</a>    open spec <span class="kw">fn </span>equiv_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#283 id=283 data-nosnippet>283</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.equiv_inv()
+<a href=#284 id=284 data-nosnippet>284</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.equiv_inv()
+<a href=#285 id=285 data-nosnippet>285</a>    }
+<a href=#286 id=286 data-nosnippet>286</a>
+<a href=#287 id=287 data-nosnippet>287</a>    proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#288 id=288 data-nosnippet>288</a>        <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_equiv_on_empty(v);
+<a href=#289 id=289 data-nosnippet>289</a>        <span class="self">self</span>.<span class="number">0</span>.lemma_serialize_equiv_on_empty(<span class="self">self</span>.<span class="number">1</span>.spec_serialize(v));
+<a href=#290 id=290 data-nosnippet>290</a>    }
+<a href=#291 id=291 data-nosnippet>291</a>}
+<a href=#292 id=292 data-nosnippet>292</a>
+<a href=#293 id=293 data-nosnippet>293</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

@@ -161,7 +161,7 @@ Everything else arrives from one macro invocation, placed outside `verus!`:
 mod __impl_packet {
     use super::*;
     vest_lib::impl_der!(
-        tagged_exact(true),   // this definition contributes an outer tag
+        tag(constructed),     // this definition has a constructed outer tag
         borrowed,             // the value type borrows from the input
         PACKET, PACKET__,     // nominal type and its combinator type alias
         PacketSpec, Packet,   // abstract and executable value types
@@ -175,9 +175,10 @@ Both macros implement the specification traits (`SpecParser`, `SpecSerializer`,
 `Productive`, `NonTailFmt`, `GoodSerializer`, `SPRoundTripDps`, etc.), and
 executable APIs (`Parser`, `Prepare`, `Serializer`).
 
-`impl_der!` additionally implements `SoundParser`, `NonMalleable`, and
-allocation-free `DerOrd`. `impl_ber!` deliberately omits those traits: BER may
-accept several encodings of the same logical value, with different lengths.
+Both macros implement `SoundParser`: successful parsing produces a value
+consistent with the format. `impl_der!` additionally implements `StrictParser`,
+`NonMalleable`, and allocation-free `DerOrd`. BER may accept several encodings of
+the same value with different lengths, so `impl_ber!` does not promise strict length consumption or non-malleability.
 
 ## Calling it
 

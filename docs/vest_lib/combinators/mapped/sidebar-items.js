@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["exec","proof","spec"],"struct":["Mapped","TryMap"]};
+window.SIDEBAR_ITEMS = {"mod":["exec","proof","spec"],"struct":["Mapped"]};

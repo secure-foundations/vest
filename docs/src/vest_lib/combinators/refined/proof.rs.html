@@ -233,7 +233,7 @@
 <a href=#233 id=233 data-nosnippet>233</a>}
 <a href=#234 id=234 data-nosnippet>234</a>
 <a href=#235 id=235 data-nosnippet>235</a><span class="kw">impl</span>&lt;Tg, Of&gt; NonMalleable <span class="kw">for </span><span class="kw">super</span>::PrefixTagged&lt;Tg, Tg::T, Of&gt; <span class="kw">where
-<a href=#236 id=236 data-nosnippet>236</a>    </span>Tg: SpecByteLen + SoundParser + NonMalleable,
+<a href=#236 id=236 data-nosnippet>236</a>    </span>Tg: SpecByteLen + SoundParser&lt;PVal = Tg::T&gt; + NonMalleable,
 <a href=#237 id=237 data-nosnippet>237</a>    Of: SoundParser + NonMalleable,
 <a href=#238 id=238 data-nosnippet>238</a> {
 <a href=#239 id=239 data-nosnippet>239</a>    open spec <span class="kw">fn </span>nonmal_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
@@ -315,7 +315,7 @@
 <a href=#315 id=315 data-nosnippet>315</a>}
 <a href=#316 id=316 data-nosnippet>316</a>
 <a href=#317 id=317 data-nosnippet>317</a><span class="kw">impl</span>&lt;Of, Tg&gt; NonMalleable <span class="kw">for </span><span class="kw">super</span>::SuffixTagged&lt;Of, Tg, Tg::T&gt; <span class="kw">where
-<a href=#318 id=318 data-nosnippet>318</a>    </span>Tg: SpecByteLen + SoundParser + NonMalleable,
+<a href=#318 id=318 data-nosnippet>318</a>    </span>Tg: SpecByteLen + SoundParser&lt;PVal = Tg::T&gt; + NonMalleable,
 <a href=#319 id=319 data-nosnippet>319</a>    Of: SoundParser + NonMalleable,
 <a href=#320 id=320 data-nosnippet>320</a> {
 <a href=#321 id=321 data-nosnippet>321</a>    open spec <span class="kw">fn </span>nonmal_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {

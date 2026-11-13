@@ -118,252 +118,249 @@
 <a href=#118 id=118 data-nosnippet>118</a></span><span class="kw">pub use </span>utf8string::Utf8StringOwned;
 <a href=#119 id=119 data-nosnippet>119</a>
 <a href=#120 id=120 data-nosnippet>120</a><span class="kw">use crate</span>::{
-<a href=#121 id=121 data-nosnippet>121</a>    combinators::{
-<a href=#122 id=122 data-nosnippet>122</a>        implicit::NBytesOf, mapped::spec::FnSpecMapper, Const, Empty, PrefixTagged, Tail, TryMap,
-<a href=#123 id=123 data-nosnippet>123</a>        U8,
-<a href=#124 id=124 data-nosnippet>124</a>    },
-<a href=#125 id=125 data-nosnippet>125</a>    core::proof::{Leaf, LeafNonMalleable},
-<a href=#126 id=126 data-nosnippet>126</a>};
-<a href=#127 id=127 data-nosnippet>127</a><span class="kw">use </span>vstd::prelude::<span class="kw-2">*</span>;
-<a href=#128 id=128 data-nosnippet>128</a>
-<a href=#129 id=129 data-nosnippet>129</a><span class="macro">verus!</span> {
-<a href=#130 id=130 data-nosnippet>130</a>
-<a href=#131 id=131 data-nosnippet>131</a><span class="kw">pub const </span>DER: bool = <span class="bool-val">true</span>;
-<a href=#132 id=132 data-nosnippet>132</a>
-<a href=#133 id=133 data-nosnippet>133</a><span class="kw">pub const </span>BER: bool = <span class="bool-val">false</span>;
+<a href=#121 id=121 data-nosnippet>121</a>    combinators::{mapped::spec::FnSpecMapper, Const, Empty, PrefixTagged, Tail, U8},
+<a href=#122 id=122 data-nosnippet>122</a>    core::proof::{Leaf, LeafNonMalleable},
+<a href=#123 id=123 data-nosnippet>123</a>};
+<a href=#124 id=124 data-nosnippet>124</a><span class="kw">use </span>vstd::prelude::<span class="kw-2">*</span>;
+<a href=#125 id=125 data-nosnippet>125</a>
+<a href=#126 id=126 data-nosnippet>126</a><span class="macro">verus!</span> {
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a><span class="kw">pub const </span>DER: bool = <span class="bool-val">true</span>;
+<a href=#129 id=129 data-nosnippet>129</a>
+<a href=#130 id=130 data-nosnippet>130</a><span class="kw">pub const </span>BER: bool = <span class="bool-val">false</span>;
+<a href=#131 id=131 data-nosnippet>131</a>
+<a href=#132 id=132 data-nosnippet>132</a><span class="attr">#[derive(Copy)]
+<a href=#133 id=133 data-nosnippet>133</a></span><span class="kw">pub struct </span>ASN1Fmt&lt;Content, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;(<span class="kw">pub </span>Tag, <span class="kw">pub </span>Content);
 <a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a><span class="attr">#[derive(Copy)]
-<a href=#136 id=136 data-nosnippet>136</a></span><span class="kw">pub struct </span>ASN1Fmt&lt;Content, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;(<span class="kw">pub </span>Tag, <span class="kw">pub </span>Content);
-<a href=#137 id=137 data-nosnippet>137</a>
-<a href=#138 id=138 data-nosnippet>138</a><span class="kw">impl</span>&lt;Content: Clone, <span class="kw">const </span>DER: bool&gt; Clone <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; {
-<a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (cloned: <span class="self">Self</span>)
-<a href=#140 id=140 data-nosnippet>140</a>        ensures
-<a href=#141 id=141 data-nosnippet>141</a>            call_ensures(Content::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>,), cloned.<span class="number">1</span>),
-<a href=#142 id=142 data-nosnippet>142</a>    {
-<a href=#143 id=143 data-nosnippet>143</a>        ASN1Fmt(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>.clone())
-<a href=#144 id=144 data-nosnippet>144</a>    }
-<a href=#145 id=145 data-nosnippet>145</a>}
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a><span class="doccomment">/// ASN.1 BOOLEAN format.
+<a href=#135 id=135 data-nosnippet>135</a><span class="kw">impl</span>&lt;Content: Clone, <span class="kw">const </span>DER: bool&gt; Clone <span class="kw">for </span>ASN1Fmt&lt;Content, DER&gt; {
+<a href=#136 id=136 data-nosnippet>136</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (cloned: <span class="self">Self</span>)
+<a href=#137 id=137 data-nosnippet>137</a>        ensures
+<a href=#138 id=138 data-nosnippet>138</a>            call_ensures(Content::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>,), cloned.<span class="number">1</span>),
+<a href=#139 id=139 data-nosnippet>139</a>    {
+<a href=#140 id=140 data-nosnippet>140</a>        ASN1Fmt(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>.clone())
+<a href=#141 id=141 data-nosnippet>141</a>    }
+<a href=#142 id=142 data-nosnippet>142</a>}
+<a href=#143 id=143 data-nosnippet>143</a>
+<a href=#144 id=144 data-nosnippet>144</a><span class="doccomment">/// ASN.1 BOOLEAN format.
+<a href=#145 id=145 data-nosnippet>145</a>///
+<a href=#146 id=146 data-nosnippet>146</a>/// When `DER = true` (the default), this is the canonical DER form:
+<a href=#147 id=147 data-nosnippet>147</a>/// FALSE = `0x00`, TRUE = `0xFF`.
 <a href=#148 id=148 data-nosnippet>148</a>///
-<a href=#149 id=149 data-nosnippet>149</a>/// When `DER = true` (the default), this is the canonical DER form:
-<a href=#150 id=150 data-nosnippet>150</a>/// FALSE = `0x00`, TRUE = `0xFF`.
-<a href=#151 id=151 data-nosnippet>151</a>///
-<a href=#152 id=152 data-nosnippet>152</a>/// When `DER = false`, this is the more permissive BER form:
-<a href=#153 id=153 data-nosnippet>153</a>/// FALSE = `0x00`, TRUE = any non-zero byte.
-<a href=#154 id=154 data-nosnippet>154</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#155 id=155 data-nosnippet>155</a></span><span class="kw">pub struct </span>BoolFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#149 id=149 data-nosnippet>149</a>/// When `DER = false`, this is the more permissive BER form:
+<a href=#150 id=150 data-nosnippet>150</a>/// FALSE = `0x00`, TRUE = any non-zero byte.
+<a href=#151 id=151 data-nosnippet>151</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#152 id=152 data-nosnippet>152</a></span><span class="kw">pub struct </span>BoolFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#153 id=153 data-nosnippet>153</a>
+<a href=#154 id=154 data-nosnippet>154</a><span class="doccomment">/// Convenience type alias for the BER variant of ASN.1 BOOLEAN.
+<a href=#155 id=155 data-nosnippet>155</a></span><span class="kw">pub type </span>BerBoolFmt = BoolFmt&lt;<span class="bool-val">false</span>&gt;;
 <a href=#156 id=156 data-nosnippet>156</a>
-<a href=#157 id=157 data-nosnippet>157</a><span class="doccomment">/// Convenience type alias for the BER variant of ASN.1 BOOLEAN.
-<a href=#158 id=158 data-nosnippet>158</a></span><span class="kw">pub type </span>BerBoolFmt = BoolFmt&lt;<span class="bool-val">false</span>&gt;;
+<a href=#157 id=157 data-nosnippet>157</a><span class="doccomment">/// Convenience type alias for the DER variant of ASN.1 BOOLEAN.
+<a href=#158 id=158 data-nosnippet>158</a></span><span class="kw">pub type </span>DerBoolFmt = BoolFmt&lt;<span class="bool-val">true</span>&gt;;
 <a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a><span class="doccomment">/// Convenience type alias for the DER variant of ASN.1 BOOLEAN.
-<a href=#161 id=161 data-nosnippet>161</a></span><span class="kw">pub type </span>DerBoolFmt = BoolFmt&lt;<span class="bool-val">true</span>&gt;;
+<a href=#160 id=160 data-nosnippet>160</a><span class="doccomment">/// Convenience value alias for the BER variant of ASN.1 BOOLEAN.
+<a href=#161 id=161 data-nosnippet>161</a></span><span class="kw">pub const </span>BerBoolFmt: BoolFmt&lt;<span class="bool-val">false</span>&gt; = BoolFmt;
 <a href=#162 id=162 data-nosnippet>162</a>
-<a href=#163 id=163 data-nosnippet>163</a><span class="doccomment">/// Convenience value alias for the BER variant of ASN.1 BOOLEAN.
-<a href=#164 id=164 data-nosnippet>164</a></span><span class="kw">pub const </span>BerBoolFmt: BoolFmt&lt;<span class="bool-val">false</span>&gt; = BoolFmt;
+<a href=#163 id=163 data-nosnippet>163</a><span class="doccomment">/// Convenience value alias for the DER variant of ASN.1 BOOLEAN.
+<a href=#164 id=164 data-nosnippet>164</a></span><span class="kw">pub const </span>DerBoolFmt: BoolFmt&lt;<span class="bool-val">true</span>&gt; = BoolFmt;
 <a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a><span class="doccomment">/// Convenience value alias for the DER variant of ASN.1 BOOLEAN.
-<a href=#167 id=167 data-nosnippet>167</a></span><span class="kw">pub const </span>DerBoolFmt: BoolFmt&lt;<span class="bool-val">true</span>&gt; = BoolFmt;
-<a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a><span class="doccomment">/// ASN.1 ANY/open-type format.
-<a href=#170 id=170 data-nosnippet>170</a>///
-<a href=#171 id=171 data-nosnippet>171</a>/// Unlike the content markers in this module, `AnyFmt` parses and serializes one complete
-<a href=#172 id=172 data-nosnippet>172</a>/// tag-length-value encoding.
-<a href=#173 id=173 data-nosnippet>173</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#174 id=174 data-nosnippet>174</a></span><span class="kw">pub struct </span>AnyFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#175 id=175 data-nosnippet>175</a>
-<a href=#176 id=176 data-nosnippet>176</a><span class="doccomment">/// Definite-length-only BER ANY format.
-<a href=#177 id=177 data-nosnippet>177</a>///
-<a href=#178 id=178 data-nosnippet>178</a>/// Prefer [`ber::BerAnyFmt`] when indefinite constructed open values must be accepted.
-<a href=#179 id=179 data-nosnippet>179</a></span><span class="kw">pub type </span>BerDefiniteAnyFmt = AnyFmt&lt;<span class="bool-val">false</span>&gt;;
-<a href=#180 id=180 data-nosnippet>180</a>
-<a href=#181 id=181 data-nosnippet>181</a><span class="kw">pub type </span>DerAnyFmt = AnyFmt&lt;<span class="bool-val">true</span>&gt;;
-<a href=#182 id=182 data-nosnippet>182</a>
-<a href=#183 id=183 data-nosnippet>183</a><span class="kw">pub const </span>BerDefiniteAnyFmt: BerDefiniteAnyFmt = AnyFmt;
-<a href=#184 id=184 data-nosnippet>184</a>
-<a href=#185 id=185 data-nosnippet>185</a><span class="kw">pub const </span>DerAnyFmt: DerAnyFmt = AnyFmt;
-<a href=#186 id=186 data-nosnippet>186</a>
-<a href=#187 id=187 data-nosnippet>187</a><span class="doccomment">/// ASN.1 definite length format whose codomain is `nat`
-<a href=#188 id=188 data-nosnippet>188</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#189 id=189 data-nosnippet>189</a></span><span class="kw">pub struct </span>NatLengthFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#190 id=190 data-nosnippet>190</a>
-<a href=#191 id=191 data-nosnippet>191</a><span class="doccomment">/// ASN.1 definite length format.
+<a href=#166 id=166 data-nosnippet>166</a><span class="doccomment">/// ASN.1 ANY/open-type format.
+<a href=#167 id=167 data-nosnippet>167</a>///
+<a href=#168 id=168 data-nosnippet>168</a>/// Unlike the content markers in this module, `AnyFmt` parses and serializes one complete
+<a href=#169 id=169 data-nosnippet>169</a>/// tag-length-value encoding.
+<a href=#170 id=170 data-nosnippet>170</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">pub struct </span>AnyFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#172 id=172 data-nosnippet>172</a>
+<a href=#173 id=173 data-nosnippet>173</a><span class="doccomment">/// Definite-length-only BER ANY format.
+<a href=#174 id=174 data-nosnippet>174</a>///
+<a href=#175 id=175 data-nosnippet>175</a>/// Prefer [`ber::BerAnyFmt`] when indefinite constructed open values must be accepted.
+<a href=#176 id=176 data-nosnippet>176</a></span><span class="kw">pub type </span>BerDefiniteAnyFmt = AnyFmt&lt;<span class="bool-val">false</span>&gt;;
+<a href=#177 id=177 data-nosnippet>177</a>
+<a href=#178 id=178 data-nosnippet>178</a><span class="kw">pub type </span>DerAnyFmt = AnyFmt&lt;<span class="bool-val">true</span>&gt;;
+<a href=#179 id=179 data-nosnippet>179</a>
+<a href=#180 id=180 data-nosnippet>180</a><span class="kw">pub const </span>BerDefiniteAnyFmt: BerDefiniteAnyFmt = AnyFmt;
+<a href=#181 id=181 data-nosnippet>181</a>
+<a href=#182 id=182 data-nosnippet>182</a><span class="kw">pub const </span>DerAnyFmt: DerAnyFmt = AnyFmt;
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a><span class="doccomment">/// ASN.1 definite length format whose codomain is `nat`
+<a href=#185 id=185 data-nosnippet>185</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#186 id=186 data-nosnippet>186</a></span><span class="kw">pub struct </span>NatLengthFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#187 id=187 data-nosnippet>187</a>
+<a href=#188 id=188 data-nosnippet>188</a><span class="doccomment">/// ASN.1 definite length format.
+<a href=#189 id=189 data-nosnippet>189</a>///
+<a href=#190 id=190 data-nosnippet>190</a>/// When `DER = true` (the default), only the canonical DER definite form is
+<a href=#191 id=191 data-nosnippet>191</a>/// accepted/produced.
 <a href=#192 id=192 data-nosnippet>192</a>///
-<a href=#193 id=193 data-nosnippet>193</a>/// When `DER = true` (the default), only the canonical DER definite form is
-<a href=#194 id=194 data-nosnippet>194</a>/// accepted/produced.
-<a href=#195 id=195 data-nosnippet>195</a>///
-<a href=#196 id=196 data-nosnippet>196</a>/// When `DER = false`, the parser/serializer is BER-permissive over short and long
-<a href=#197 id=197 data-nosnippet>197</a>/// definite forms, without minimality constraints.
-<a href=#198 id=198 data-nosnippet>198</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#199 id=199 data-nosnippet>199</a></span><span class="kw">pub struct </span>LengthFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a><span class="doccomment">/// BER length, including the indefinite form (`0x80`).
-<a href=#202 id=202 data-nosnippet>202</a></span><span class="attr">#[derive(StructuralEq, Copy, Clone, PartialEq, Eq, Debug)]
-<a href=#203 id=203 data-nosnippet>203</a></span><span class="kw">pub enum </span>BerLength {
-<a href=#204 id=204 data-nosnippet>204</a>    Definite(usize),
-<a href=#205 id=205 data-nosnippet>205</a>    Indefinite,
-<a href=#206 id=206 data-nosnippet>206</a>}
+<a href=#193 id=193 data-nosnippet>193</a>/// When `DER = false`, the parser/serializer is BER-permissive over short and long
+<a href=#194 id=194 data-nosnippet>194</a>/// definite forms, without minimality constraints.
+<a href=#195 id=195 data-nosnippet>195</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#196 id=196 data-nosnippet>196</a></span><span class="kw">pub struct </span>LengthFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#197 id=197 data-nosnippet>197</a>
+<a href=#198 id=198 data-nosnippet>198</a><span class="doccomment">/// BER length, including the indefinite form (`0x80`).
+<a href=#199 id=199 data-nosnippet>199</a></span><span class="attr">#[derive(StructuralEq, Copy, Clone, PartialEq, Eq, Debug)]
+<a href=#200 id=200 data-nosnippet>200</a></span><span class="kw">pub enum </span>BerLength {
+<a href=#201 id=201 data-nosnippet>201</a>    Definite(usize),
+<a href=#202 id=202 data-nosnippet>202</a>    Indefinite,
+<a href=#203 id=203 data-nosnippet>203</a>}
+<a href=#204 id=204 data-nosnippet>204</a>
+<a href=#205 id=205 data-nosnippet>205</a><span class="kw">impl </span>DeepView <span class="kw">for </span>BerLength {
+<a href=#206 id=206 data-nosnippet>206</a>    <span class="kw">type </span>V = <span class="self">Self</span>;
 <a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a><span class="kw">impl </span>DeepView <span class="kw">for </span>BerLength {
-<a href=#209 id=209 data-nosnippet>209</a>    <span class="kw">type </span>V = <span class="self">Self</span>;
-<a href=#210 id=210 data-nosnippet>210</a>
-<a href=#211 id=211 data-nosnippet>211</a>    open spec <span class="kw">fn </span>deep_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::V {
-<a href=#212 id=212 data-nosnippet>212</a>        <span class="kw-2">*</span><span class="self">self
-<a href=#213 id=213 data-nosnippet>213</a>    </span>}
-<a href=#214 id=214 data-nosnippet>214</a>}
-<a href=#215 id=215 data-nosnippet>215</a>
-<a href=#216 id=216 data-nosnippet>216</a><span class="doccomment">/// BER length determinant accepting both definite and indefinite encodings.
-<a href=#217 id=217 data-nosnippet>217</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#218 id=218 data-nosnippet>218</a></span><span class="kw">pub struct </span>BerLengthFmt;
-<a href=#219 id=219 data-nosnippet>219</a>
-<a href=#220 id=220 data-nosnippet>220</a><span class="doccomment">/// ASN.1 INTEGER contents format.
-<a href=#221 id=221 data-nosnippet>221</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">pub struct </span>IntegerFmt;
-<a href=#223 id=223 data-nosnippet>223</a>
-<a href=#224 id=224 data-nosnippet>224</a><span class="doccomment">/// ASN.1 ENUMERATED contents format.
-<a href=#225 id=225 data-nosnippet>225</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#226 id=226 data-nosnippet>226</a></span><span class="kw">pub struct </span>EnumeratedFmt;
-<a href=#227 id=227 data-nosnippet>227</a>
-<a href=#228 id=228 data-nosnippet>228</a><span class="doccomment">/// ASN.1 OBJECT IDENTIFIER contents format.
-<a href=#229 id=229 data-nosnippet>229</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#230 id=230 data-nosnippet>230</a></span><span class="kw">pub struct </span>ObjectIdentifierFmt;
-<a href=#231 id=231 data-nosnippet>231</a>
-<a href=#232 id=232 data-nosnippet>232</a><span class="doccomment">/// ASN.1 REAL contents format.
-<a href=#233 id=233 data-nosnippet>233</a>///
-<a href=#234 id=234 data-nosnippet>234</a>/// `DER = true` accepts only the canonical DER forms. `DER = false` accepts the
-<a href=#235 id=235 data-nosnippet>235</a>/// additional binary and ISO 6093 decimal forms permitted by BER.
-<a href=#236 id=236 data-nosnippet>236</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#237 id=237 data-nosnippet>237</a></span><span class="kw">pub struct </span>RealFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#238 id=238 data-nosnippet>238</a>
-<a href=#239 id=239 data-nosnippet>239</a><span class="doccomment">/// ASN.1 BIT STRING contents format.
+<a href=#208 id=208 data-nosnippet>208</a>    open spec <span class="kw">fn </span>deep_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::V {
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="kw-2">*</span><span class="self">self
+<a href=#210 id=210 data-nosnippet>210</a>    </span>}
+<a href=#211 id=211 data-nosnippet>211</a>}
+<a href=#212 id=212 data-nosnippet>212</a>
+<a href=#213 id=213 data-nosnippet>213</a><span class="doccomment">/// BER length determinant accepting both definite and indefinite encodings.
+<a href=#214 id=214 data-nosnippet>214</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#215 id=215 data-nosnippet>215</a></span><span class="kw">pub struct </span>BerLengthFmt;
+<a href=#216 id=216 data-nosnippet>216</a>
+<a href=#217 id=217 data-nosnippet>217</a><span class="doccomment">/// ASN.1 INTEGER contents format.
+<a href=#218 id=218 data-nosnippet>218</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#219 id=219 data-nosnippet>219</a></span><span class="kw">pub struct </span>IntegerFmt;
+<a href=#220 id=220 data-nosnippet>220</a>
+<a href=#221 id=221 data-nosnippet>221</a><span class="doccomment">/// ASN.1 ENUMERATED contents format.
+<a href=#222 id=222 data-nosnippet>222</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#223 id=223 data-nosnippet>223</a></span><span class="kw">pub struct </span>EnumeratedFmt;
+<a href=#224 id=224 data-nosnippet>224</a>
+<a href=#225 id=225 data-nosnippet>225</a><span class="doccomment">/// ASN.1 OBJECT IDENTIFIER contents format.
+<a href=#226 id=226 data-nosnippet>226</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#227 id=227 data-nosnippet>227</a></span><span class="kw">pub struct </span>ObjectIdentifierFmt;
+<a href=#228 id=228 data-nosnippet>228</a>
+<a href=#229 id=229 data-nosnippet>229</a><span class="doccomment">/// ASN.1 REAL contents format.
+<a href=#230 id=230 data-nosnippet>230</a>///
+<a href=#231 id=231 data-nosnippet>231</a>/// `DER = true` accepts only the canonical DER forms. `DER = false` accepts the
+<a href=#232 id=232 data-nosnippet>232</a>/// additional binary and ISO 6093 decimal forms permitted by BER.
+<a href=#233 id=233 data-nosnippet>233</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#234 id=234 data-nosnippet>234</a></span><span class="kw">pub struct </span>RealFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#235 id=235 data-nosnippet>235</a>
+<a href=#236 id=236 data-nosnippet>236</a><span class="doccomment">/// ASN.1 BIT STRING contents format.
+<a href=#237 id=237 data-nosnippet>237</a>///
+<a href=#238 id=238 data-nosnippet>238</a>/// When `DER = true` (the default), only the canonical DER form is accepted, which requires
+<a href=#239 id=239 data-nosnippet>239</a>/// the trailing unused bits to be zero.
 <a href=#240 id=240 data-nosnippet>240</a>///
-<a href=#241 id=241 data-nosnippet>241</a>/// When `DER = true` (the default), only the canonical DER form is accepted, which requires
-<a href=#242 id=242 data-nosnippet>242</a>/// the trailing unused bits to be zero.
-<a href=#243 id=243 data-nosnippet>243</a>///
-<a href=#244 id=244 data-nosnippet>244</a>/// When `DER = false`, the parser allows any value for the trailing unused bits.
-<a href=#245 id=245 data-nosnippet>245</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#246 id=246 data-nosnippet>246</a></span><span class="kw">pub struct </span>BitStringFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#241 id=241 data-nosnippet>241</a>/// When `DER = false`, the parser allows any value for the trailing unused bits.
+<a href=#242 id=242 data-nosnippet>242</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#243 id=243 data-nosnippet>243</a></span><span class="kw">pub struct </span>BitStringFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#244 id=244 data-nosnippet>244</a>
+<a href=#245 id=245 data-nosnippet>245</a><span class="doccomment">/// Convenience type alias for primitive BER BIT STRING contents.
+<a href=#246 id=246 data-nosnippet>246</a></span><span class="kw">pub type </span>BerBitStringContentFmt = BitStringFmt&lt;<span class="bool-val">false</span>&gt;;
 <a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a><span class="doccomment">/// Convenience type alias for primitive BER BIT STRING contents.
-<a href=#249 id=249 data-nosnippet>249</a></span><span class="kw">pub type </span>BerBitStringContentFmt = BitStringFmt&lt;<span class="bool-val">false</span>&gt;;
-<a href=#250 id=250 data-nosnippet>250</a>
-<a href=#251 id=251 data-nosnippet>251</a><span class="doccomment">/// ASN.1 tag format combinator.
-<a href=#252 id=252 data-nosnippet>252</a>///
-<a href=#253 id=253 data-nosnippet>253</a>/// Only the canonical DER form is accepted:
-<a href=#254 id=254 data-nosnippet>254</a>/// - Tag numbers 0–30 must use the short (1-byte) form.
-<a href=#255 id=255 data-nosnippet>255</a>/// - High tag numbers must have no leading zero in the base-128 encoding.
-<a href=#256 id=256 data-nosnippet>256</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#257 id=257 data-nosnippet>257</a></span><span class="kw">pub struct </span>TagFmt;
+<a href=#248 id=248 data-nosnippet>248</a><span class="doccomment">/// ASN.1 tag format combinator.
+<a href=#249 id=249 data-nosnippet>249</a>///
+<a href=#250 id=250 data-nosnippet>250</a>/// Only the canonical DER form is accepted:
+<a href=#251 id=251 data-nosnippet>251</a>/// - Tag numbers 0–30 must use the short (1-byte) form.
+<a href=#252 id=252 data-nosnippet>252</a>/// - High tag numbers must have no leading zero in the base-128 encoding.
+<a href=#253 id=253 data-nosnippet>253</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#254 id=254 data-nosnippet>254</a></span><span class="kw">pub struct </span>TagFmt;
+<a href=#255 id=255 data-nosnippet>255</a>
+<a href=#256 id=256 data-nosnippet>256</a><span class="doccomment">/// Convenience type alias for the DER variant of ASN.1 BIT STRING.
+<a href=#257 id=257 data-nosnippet>257</a></span><span class="kw">pub type </span>DerBitStringFmt = BitStringFmt&lt;<span class="bool-val">true</span>&gt;;
 <a href=#258 id=258 data-nosnippet>258</a>
-<a href=#259 id=259 data-nosnippet>259</a><span class="doccomment">/// Convenience type alias for the DER variant of ASN.1 BIT STRING.
-<a href=#260 id=260 data-nosnippet>260</a></span><span class="kw">pub type </span>DerBitStringFmt = BitStringFmt&lt;<span class="bool-val">true</span>&gt;;
-<a href=#261 id=261 data-nosnippet>261</a>
-<a href=#262 id=262 data-nosnippet>262</a><span class="doccomment">/// ASN.1 OCTET STRING contents format (primitive).
-<a href=#263 id=263 data-nosnippet>263</a>///
-<a href=#264 id=264 data-nosnippet>264</a>/// This content format intentionally handles only primitive bytes. Recursive
-<a href=#265 id=265 data-nosnippet>265</a>/// constructed BER OCTET STRINGs are provided by
-<a href=#266 id=266 data-nosnippet>266</a>/// [`ber::BerOctetStringFmt`].
-<a href=#267 id=267 data-nosnippet>267</a>/// For example, a constructed encoding may have the following shape:
-<a href=#268 id=268 data-nosnippet>268</a>///
-<a href=#269 id=269 data-nosnippet>269</a>/// ### Example
-<a href=#270 id=270 data-nosnippet>270</a>///
-<a href=#271 id=271 data-nosnippet>271</a>/// 24 80 04 03 42 45 52 24 80 04 01 2D 04 05 52 55 4C 45 53 00 00 00 00
-<a href=#272 id=272 data-nosnippet>272</a>/// │  │  │  │  └───────┘ │  │  │  │  │  │  │  └──────────────┘ │     │
-<a href=#273 id=273 data-nosnippet>273</a>/// │  │  │  │  "BER"     │  │  │  │  │  │  └─ Len: 5 "RULES"   │     └─ Outer EOC
-<a href=#274 id=274 data-nosnippet>274</a>/// │  │  │  └─ Len: 3    │  │  │  │  │  └─ Primitive           └─ Inner EOC
-<a href=#275 id=275 data-nosnippet>275</a>/// │  │  └─ Primitive    │  │  │  │  └─ "-"
-<a href=#276 id=276 data-nosnippet>276</a>/// │  └─ Indefinite      │  │  │  └─ Len: 1
-<a href=#277 id=277 data-nosnippet>277</a>/// └─ Outer Outer        │  │  └─ Primitive
-<a href=#278 id=278 data-nosnippet>278</a>///                       │  └─ Indefinite
-<a href=#279 id=279 data-nosnippet>279</a>///                       └─ Inner Constructed
-<a href=#280 id=280 data-nosnippet>280</a>///
-<a href=#281 id=281 data-nosnippet>281</a>/// [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+<a href=#259 id=259 data-nosnippet>259</a><span class="doccomment">/// ASN.1 OCTET STRING contents format (primitive).
+<a href=#260 id=260 data-nosnippet>260</a>///
+<a href=#261 id=261 data-nosnippet>261</a>/// This content format intentionally handles only primitive bytes. Recursive
+<a href=#262 id=262 data-nosnippet>262</a>/// constructed BER OCTET STRINGs are provided by
+<a href=#263 id=263 data-nosnippet>263</a>/// [`ber::BerOctetStringFmt`].
+<a href=#264 id=264 data-nosnippet>264</a>/// For example, a constructed encoding may have the following shape:
+<a href=#265 id=265 data-nosnippet>265</a>///
+<a href=#266 id=266 data-nosnippet>266</a>/// ### Example
+<a href=#267 id=267 data-nosnippet>267</a>///
+<a href=#268 id=268 data-nosnippet>268</a>/// 24 80 04 03 42 45 52 24 80 04 01 2D 04 05 52 55 4C 45 53 00 00 00 00
+<a href=#269 id=269 data-nosnippet>269</a>/// │  │  │  │  └───────┘ │  │  │  │  │  │  │  └──────────────┘ │     │
+<a href=#270 id=270 data-nosnippet>270</a>/// │  │  │  │  "BER"     │  │  │  │  │  │  └─ Len: 5 "RULES"   │     └─ Outer EOC
+<a href=#271 id=271 data-nosnippet>271</a>/// │  │  │  └─ Len: 3    │  │  │  │  │  └─ Primitive           └─ Inner EOC
+<a href=#272 id=272 data-nosnippet>272</a>/// │  │  └─ Primitive    │  │  │  │  └─ "-"
+<a href=#273 id=273 data-nosnippet>273</a>/// │  └─ Indefinite      │  │  │  └─ Len: 1
+<a href=#274 id=274 data-nosnippet>274</a>/// └─ Outer Outer        │  │  └─ Primitive
+<a href=#275 id=275 data-nosnippet>275</a>///                       │  └─ Indefinite
+<a href=#276 id=276 data-nosnippet>276</a>///                       └─ Inner Constructed
+<a href=#277 id=277 data-nosnippet>277</a>///
+<a href=#278 id=278 data-nosnippet>278</a>/// [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+<a href=#279 id=279 data-nosnippet>279</a>///  │
+<a href=#280 id=280 data-nosnippet>280</a>///  ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 3)
+<a href=#281 id=281 data-nosnippet>281</a>///  │      └── Value: "BER" (Hex: 42 45 52)
 <a href=#282 id=282 data-nosnippet>282</a>///  │
-<a href=#283 id=283 data-nosnippet>283</a>///  ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 3)
-<a href=#284 id=284 data-nosnippet>284</a>///  │      └── Value: "BER" (Hex: 42 45 52)
-<a href=#285 id=285 data-nosnippet>285</a>///  │
-<a href=#286 id=286 data-nosnippet>286</a>///  ├── [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+<a href=#283 id=283 data-nosnippet>283</a>///  ├── [TAG: 24] Constructed OCTET STRING (Indefinite Length)
+<a href=#284 id=284 data-nosnippet>284</a>///  │      │
+<a href=#285 id=285 data-nosnippet>285</a>///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 1)
+<a href=#286 id=286 data-nosnippet>286</a>///  │      │      └── Value: "-" (Hex: 2D)
 <a href=#287 id=287 data-nosnippet>287</a>///  │      │
-<a href=#288 id=288 data-nosnippet>288</a>///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 1)
-<a href=#289 id=289 data-nosnippet>289</a>///  │      │      └── Value: "-" (Hex: 2D)
+<a href=#288 id=288 data-nosnippet>288</a>///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 5)
+<a href=#289 id=289 data-nosnippet>289</a>///  │      │      └── Value: "RULES" (Hex: 52 55 4C 45 53)
 <a href=#290 id=290 data-nosnippet>290</a>///  │      │
-<a href=#291 id=291 data-nosnippet>291</a>///  │      ├── [TAG: 04] Primitive OCTET STRING (Definite Length: 5)
-<a href=#292 id=292 data-nosnippet>292</a>///  │      │      └── Value: "RULES" (Hex: 52 55 4C 45 53)
-<a href=#293 id=293 data-nosnippet>293</a>///  │      │
-<a href=#294 id=294 data-nosnippet>294</a>///  │      └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
-<a href=#295 id=295 data-nosnippet>295</a>///  │             └── Meaning: Closes the Inner Constructed String
-<a href=#296 id=296 data-nosnippet>296</a>///  │
-<a href=#297 id=297 data-nosnippet>297</a>///  └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
-<a href=#298 id=298 data-nosnippet>298</a>///         └── Meaning: Closes the Outer Constructed String
-<a href=#299 id=299 data-nosnippet>299</a></span><span class="kw">pub type </span>OctetStringFmt = Tail;
+<a href=#291 id=291 data-nosnippet>291</a>///  │      └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+<a href=#292 id=292 data-nosnippet>292</a>///  │             └── Meaning: Closes the Inner Constructed String
+<a href=#293 id=293 data-nosnippet>293</a>///  │
+<a href=#294 id=294 data-nosnippet>294</a>///  └── [TAG: 00] End-of-Contents (EOC) Marker (Hex: 00 00)
+<a href=#295 id=295 data-nosnippet>295</a>///         └── Meaning: Closes the Outer Constructed String
+<a href=#296 id=296 data-nosnippet>296</a></span><span class="kw">pub type </span>OctetStringFmt = Tail;
+<a href=#297 id=297 data-nosnippet>297</a>
+<a href=#298 id=298 data-nosnippet>298</a><span class="doccomment">/// Convenience value alias for ASN.1 OCTET STRING contents format.
+<a href=#299 id=299 data-nosnippet>299</a></span><span class="kw">pub const </span>OctetStringFmt: Tail = Tail;
 <a href=#300 id=300 data-nosnippet>300</a>
-<a href=#301 id=301 data-nosnippet>301</a><span class="doccomment">/// Convenience value alias for ASN.1 OCTET STRING contents format.
-<a href=#302 id=302 data-nosnippet>302</a></span><span class="kw">pub const </span>OctetStringFmt: Tail = Tail;
+<a href=#301 id=301 data-nosnippet>301</a><span class="doccomment">/// ASN.1 NULL format.
+<a href=#302 id=302 data-nosnippet>302</a></span><span class="kw">pub type </span>NullFmt = Empty;
 <a href=#303 id=303 data-nosnippet>303</a>
-<a href=#304 id=304 data-nosnippet>304</a><span class="doccomment">/// ASN.1 NULL format.
-<a href=#305 id=305 data-nosnippet>305</a></span><span class="kw">pub type </span>NullFmt = Empty;
+<a href=#304 id=304 data-nosnippet>304</a><span class="doccomment">/// Convenience value alias for ASN.1 NULL format.
+<a href=#305 id=305 data-nosnippet>305</a></span><span class="kw">pub const </span>NullFmt: Empty = Empty;
 <a href=#306 id=306 data-nosnippet>306</a>
-<a href=#307 id=307 data-nosnippet>307</a><span class="doccomment">/// Convenience value alias for ASN.1 NULL format.
-<a href=#308 id=308 data-nosnippet>308</a></span><span class="kw">pub const </span>NullFmt: Empty = Empty;
-<a href=#309 id=309 data-nosnippet>309</a>
-<a href=#310 id=310 data-nosnippet>310</a><span class="doccomment">/// ASN.1 UTCTime format.
-<a href=#311 id=311 data-nosnippet>311</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#312 id=312 data-nosnippet>312</a></span><span class="kw">pub struct </span>UtcTimeFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#313 id=313 data-nosnippet>313</a>
-<a href=#314 id=314 data-nosnippet>314</a><span class="kw">pub type </span>BerUtcTimeFmt = UtcTimeFmt&lt;<span class="bool-val">false</span>&gt;;
-<a href=#315 id=315 data-nosnippet>315</a>
-<a href=#316 id=316 data-nosnippet>316</a><span class="kw">pub type </span>DerUtcTimeFmt = UtcTimeFmt&lt;<span class="bool-val">true</span>&gt;;
-<a href=#317 id=317 data-nosnippet>317</a>
-<a href=#318 id=318 data-nosnippet>318</a><span class="kw">pub const </span>BerUtcTimeFmt: BerUtcTimeFmt = UtcTimeFmt;
-<a href=#319 id=319 data-nosnippet>319</a>
-<a href=#320 id=320 data-nosnippet>320</a><span class="kw">pub const </span>DerUtcTimeFmt: DerUtcTimeFmt = UtcTimeFmt;
-<a href=#321 id=321 data-nosnippet>321</a>
-<a href=#322 id=322 data-nosnippet>322</a><span class="doccomment">/// ASN.1 UTF8String format.
-<a href=#323 id=323 data-nosnippet>323</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#324 id=324 data-nosnippet>324</a></span><span class="kw">pub struct </span>Utf8StringFmt;
-<a href=#325 id=325 data-nosnippet>325</a>
-<a href=#326 id=326 data-nosnippet>326</a><span class="doccomment">/// ASN.1 PrintableString format.
-<a href=#327 id=327 data-nosnippet>327</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#328 id=328 data-nosnippet>328</a></span><span class="kw">pub struct </span>PrintableStringFmt;
-<a href=#329 id=329 data-nosnippet>329</a>
-<a href=#330 id=330 data-nosnippet>330</a><span class="doccomment">/// ASN.1 IA5String format.
-<a href=#331 id=331 data-nosnippet>331</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#332 id=332 data-nosnippet>332</a></span><span class="kw">pub struct </span>Ia5StringFmt;
-<a href=#333 id=333 data-nosnippet>333</a>
-<a href=#334 id=334 data-nosnippet>334</a><span class="doccomment">/// ASN.1 BMPString format.
-<a href=#335 id=335 data-nosnippet>335</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#336 id=336 data-nosnippet>336</a></span><span class="kw">pub struct </span>BmpStringFmt;
-<a href=#337 id=337 data-nosnippet>337</a>
-<a href=#338 id=338 data-nosnippet>338</a><span class="doccomment">/// ASN.1 TeletexString format.
-<a href=#339 id=339 data-nosnippet>339</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#340 id=340 data-nosnippet>340</a></span><span class="kw">pub struct </span>TeletexStringFmt;
-<a href=#341 id=341 data-nosnippet>341</a>
-<a href=#342 id=342 data-nosnippet>342</a><span class="doccomment">/// ASN.1 UniversalString format.
-<a href=#343 id=343 data-nosnippet>343</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#344 id=344 data-nosnippet>344</a></span><span class="kw">pub struct </span>UniversalStringFmt;
-<a href=#345 id=345 data-nosnippet>345</a>
-<a href=#346 id=346 data-nosnippet>346</a><span class="doccomment">/// ASN.1 GeneralizedTime format.
-<a href=#347 id=347 data-nosnippet>347</a></span><span class="attr">#[derive(Clone, Copy)]
-<a href=#348 id=348 data-nosnippet>348</a></span><span class="kw">pub struct </span>GeneralizedTimeFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
-<a href=#349 id=349 data-nosnippet>349</a>
-<a href=#350 id=350 data-nosnippet>350</a><span class="kw">pub type </span>BerGeneralizedTimeFmt = GeneralizedTimeFmt&lt;<span class="bool-val">false</span>&gt;;
-<a href=#351 id=351 data-nosnippet>351</a>
-<a href=#352 id=352 data-nosnippet>352</a><span class="kw">pub type </span>DerGeneralizedTimeFmt = GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt;;
-<a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a><span class="kw">pub const </span>BerGeneralizedTimeFmt: BerGeneralizedTimeFmt = GeneralizedTimeFmt;
-<a href=#355 id=355 data-nosnippet>355</a>
-<a href=#356 id=356 data-nosnippet>356</a><span class="kw">pub const </span>DerGeneralizedTimeFmt: DerGeneralizedTimeFmt = GeneralizedTimeFmt;
-<a href=#357 id=357 data-nosnippet>357</a>
-<a href=#358 id=358 data-nosnippet>358</a><span class="kw">impl </span>LeafNonMalleable <span class="kw">for </span>DerBoolFmt {
-<a href=#359 id=359 data-nosnippet>359</a>    proof <span class="kw">fn </span>nonmal_leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-<a href=#360 id=360 data-nosnippet>360</a>    }
-<a href=#361 id=361 data-nosnippet>361</a>}
-<a href=#362 id=362 data-nosnippet>362</a>
-<a href=#363 id=363 data-nosnippet>363</a><span class="kw">impl </span>Leaf <span class="kw">for </span>BerBoolFmt {
-<a href=#364 id=364 data-nosnippet>364</a>    proof <span class="kw">fn </span>leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-<a href=#365 id=365 data-nosnippet>365</a>    }
-<a href=#366 id=366 data-nosnippet>366</a>}
-<a href=#367 id=367 data-nosnippet>367</a>
-<a href=#368 id=368 data-nosnippet>368</a>} <span class="comment">// verus!
+<a href=#307 id=307 data-nosnippet>307</a><span class="doccomment">/// ASN.1 UTCTime format.
+<a href=#308 id=308 data-nosnippet>308</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#309 id=309 data-nosnippet>309</a></span><span class="kw">pub struct </span>UtcTimeFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#310 id=310 data-nosnippet>310</a>
+<a href=#311 id=311 data-nosnippet>311</a><span class="kw">pub type </span>BerUtcTimeFmt = UtcTimeFmt&lt;<span class="bool-val">false</span>&gt;;
+<a href=#312 id=312 data-nosnippet>312</a>
+<a href=#313 id=313 data-nosnippet>313</a><span class="kw">pub type </span>DerUtcTimeFmt = UtcTimeFmt&lt;<span class="bool-val">true</span>&gt;;
+<a href=#314 id=314 data-nosnippet>314</a>
+<a href=#315 id=315 data-nosnippet>315</a><span class="kw">pub const </span>BerUtcTimeFmt: BerUtcTimeFmt = UtcTimeFmt;
+<a href=#316 id=316 data-nosnippet>316</a>
+<a href=#317 id=317 data-nosnippet>317</a><span class="kw">pub const </span>DerUtcTimeFmt: DerUtcTimeFmt = UtcTimeFmt;
+<a href=#318 id=318 data-nosnippet>318</a>
+<a href=#319 id=319 data-nosnippet>319</a><span class="doccomment">/// ASN.1 UTF8String format.
+<a href=#320 id=320 data-nosnippet>320</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#321 id=321 data-nosnippet>321</a></span><span class="kw">pub struct </span>Utf8StringFmt;
+<a href=#322 id=322 data-nosnippet>322</a>
+<a href=#323 id=323 data-nosnippet>323</a><span class="doccomment">/// ASN.1 PrintableString format.
+<a href=#324 id=324 data-nosnippet>324</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#325 id=325 data-nosnippet>325</a></span><span class="kw">pub struct </span>PrintableStringFmt;
+<a href=#326 id=326 data-nosnippet>326</a>
+<a href=#327 id=327 data-nosnippet>327</a><span class="doccomment">/// ASN.1 IA5String format.
+<a href=#328 id=328 data-nosnippet>328</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#329 id=329 data-nosnippet>329</a></span><span class="kw">pub struct </span>Ia5StringFmt;
+<a href=#330 id=330 data-nosnippet>330</a>
+<a href=#331 id=331 data-nosnippet>331</a><span class="doccomment">/// ASN.1 BMPString format.
+<a href=#332 id=332 data-nosnippet>332</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#333 id=333 data-nosnippet>333</a></span><span class="kw">pub struct </span>BmpStringFmt;
+<a href=#334 id=334 data-nosnippet>334</a>
+<a href=#335 id=335 data-nosnippet>335</a><span class="doccomment">/// ASN.1 TeletexString format.
+<a href=#336 id=336 data-nosnippet>336</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#337 id=337 data-nosnippet>337</a></span><span class="kw">pub struct </span>TeletexStringFmt;
+<a href=#338 id=338 data-nosnippet>338</a>
+<a href=#339 id=339 data-nosnippet>339</a><span class="doccomment">/// ASN.1 UniversalString format.
+<a href=#340 id=340 data-nosnippet>340</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#341 id=341 data-nosnippet>341</a></span><span class="kw">pub struct </span>UniversalStringFmt;
+<a href=#342 id=342 data-nosnippet>342</a>
+<a href=#343 id=343 data-nosnippet>343</a><span class="doccomment">/// ASN.1 GeneralizedTime format.
+<a href=#344 id=344 data-nosnippet>344</a></span><span class="attr">#[derive(Clone, Copy)]
+<a href=#345 id=345 data-nosnippet>345</a></span><span class="kw">pub struct </span>GeneralizedTimeFmt&lt;<span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;;
+<a href=#346 id=346 data-nosnippet>346</a>
+<a href=#347 id=347 data-nosnippet>347</a><span class="kw">pub type </span>BerGeneralizedTimeFmt = GeneralizedTimeFmt&lt;<span class="bool-val">false</span>&gt;;
+<a href=#348 id=348 data-nosnippet>348</a>
+<a href=#349 id=349 data-nosnippet>349</a><span class="kw">pub type </span>DerGeneralizedTimeFmt = GeneralizedTimeFmt&lt;<span class="bool-val">true</span>&gt;;
+<a href=#350 id=350 data-nosnippet>350</a>
+<a href=#351 id=351 data-nosnippet>351</a><span class="kw">pub const </span>BerGeneralizedTimeFmt: BerGeneralizedTimeFmt = GeneralizedTimeFmt;
+<a href=#352 id=352 data-nosnippet>352</a>
+<a href=#353 id=353 data-nosnippet>353</a><span class="kw">pub const </span>DerGeneralizedTimeFmt: DerGeneralizedTimeFmt = GeneralizedTimeFmt;
+<a href=#354 id=354 data-nosnippet>354</a>
+<a href=#355 id=355 data-nosnippet>355</a><span class="kw">impl </span>LeafNonMalleable <span class="kw">for </span>DerBoolFmt {
+<a href=#356 id=356 data-nosnippet>356</a>    proof <span class="kw">fn </span>nonmal_leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+<a href=#357 id=357 data-nosnippet>357</a>    }
+<a href=#358 id=358 data-nosnippet>358</a>}
+<a href=#359 id=359 data-nosnippet>359</a>
+<a href=#360 id=360 data-nosnippet>360</a><span class="kw">impl </span>Leaf <span class="kw">for </span>BerBoolFmt {
+<a href=#361 id=361 data-nosnippet>361</a>    proof <span class="kw">fn </span>leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+<a href=#362 id=362 data-nosnippet>362</a>    }
+<a href=#363 id=363 data-nosnippet>363</a>}
+<a href=#364 id=364 data-nosnippet>364</a>
+<a href=#365 id=365 data-nosnippet>365</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

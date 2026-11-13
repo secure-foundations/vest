@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0e0bd3c9.js";
+            window.path_to_searchindex_js = "searchindex-63fac2c1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -709,26 +709,25 @@ that there are no out-of-bounds accesses.</li>
 <li><strong>Arithmetic safety.</strong> No integer overflow or underflow, including in length/offset
 calculations — the classic place where a hand-written parser goes wrong.</li>
 <li><strong>Termination and panic freedom.</strong> Parsing and serializing terminate and never
-panic, on <em>any</em> input.</li>
+panic.</li>
 </ul>
 <h2 id="correctness-and-security"><a class="header" href="#correctness-and-security">Correctness and security</a></h2>
-<p>These are the properties that prevent format confusion and malleability.
-Most, but not every format can satisfy all of them, and Vest is explicit
-about which properties hold for which formats.</p>
+<p>Parser soundness and completeness, serializer non-ambiguity, and serialize-parse roundtrip properties hold for every format Vest generates:</p>
 <ul>
-<li><strong>Parser soundness.</strong> If parsing succeeds, the result is a valid instance of
-the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
+<li><strong>Parser soundness.</strong> If parsing succeeds, the parsed value is a valid instance of the format.</li>
 <li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
+<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the same bytes.</li>
+<li><strong>Serialize-parse roundtrip.</strong> For every valid value, serializing it and then parsing the result back yields the original value.</li>
+</ul>
+<p>The following are additional parser properties that hold for some formats, but not all.</p>
+<ul>
 <li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
 Modifying or truncating its consumed bytes changes the outcome — it fails, or
 yields a different value.</li>
 <li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
 change what was already parsed.</li>
 <li><strong>Parser productivity.</strong> A successful parse consumes at least one byte, making “progress” on the input.</li>
-<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the
-same bytes.</li>
-<li><strong>Round trips.</strong> Together, for unambiguous, non-malleable formats, parsing and serializing are mutual inverses: parse-then-serialize reproduces the consumed
-bytes, and serialize-then-parse recovers the value.</li>
+<li><strong>Parser strictness.</strong> A successful parse always consumes exactly the number of bytes specified by the format.</li>
 </ul>
 <h2 id="when-a-format-cannot-be-non-malleable"><a class="header" href="#when-a-format-cannot-be-non-malleable">When a format cannot be non-malleable</a></h2>
 <p>While non-malleability is the gold standard in cryptographic systems, it
@@ -1672,6 +1671,7 @@ parser and serializer specs, as we’ll see in
 impl SafeParser  for MessageFmt { /* .. */ }
 impl Productive  for MessageFmt { /* .. */ }
 impl SoundParser for MessageFmt { /* .. */ }
+impl StrictParser for MessageFmt { /* .. */ }
 impl SPRoundTripDps for MessageFmt { /* .. */ }
 impl NonMalleable for MessageFmt { /* .. */ }
 // ...plus more auxiliary proof traits, depending on the format</code></pre>
@@ -1851,8 +1851,8 @@ it needs a proof that the length fits in <code>usize</code>.</p>
     assert(output@ == input@[0..consumed]);
     Ok(output)
 }</code></pre>
-<p>Note that no <code>prepare</code> is needed here. <code>parser_lemmas</code> already establish that <code>value</code> is
-consistent with the format and that <code>consumed</code> is its exact length. The equality covers only the consumed prefix.
+<p>Note that no <code>prepare</code> is needed here. <code>parser_lemmas</code> uses <code>SoundParser</code> to establish
+consistency and <code>StrictParser</code> to equate <code>consumed</code> with the serialized length.
 It also inherently requires non-malleability: a malleable format, such as ASN.1 BER, may accept
 several encodings of the same value during parsing and serialize it to a different binary form.</p>
 <p>See the <a href="../vest_lib/core/proof/index.html">proof traits</a> in <code>vest_lib</code> for more details on the roundtrip and non-malleability theorems.</p>
@@ -2237,7 +2237,7 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
 <pre><code class="language-rust ignore">mod __impl_packet {
     use super::*;
     vest_lib::impl_der!(
-        tagged_exact(true),   // this definition contributes an outer tag
+        tag(constructed),     // this definition has a constructed outer tag
         borrowed,             // the value type borrows from the input
         PACKET, PACKET__,     // nominal type and its combinator type alias
         PacketSpec, Packet,   // abstract and executable value types
@@ -2248,9 +2248,10 @@ unambiguous (needed for serialize-then-parse roundtrip) by leveraging a sound ov
 <code>SpecByteLen</code>, <code>Consistency</code>), compositional proof traits (<code>SafeParser</code>,
 <code>Productive</code>, <code>NonTailFmt</code>, <code>GoodSerializer</code>, <code>SPRoundTripDps</code>, etc.), and
 executable APIs (<code>Parser</code>, <code>Prepare</code>, <code>Serializer</code>).</p>
-<p><code>impl_der!</code> additionally implements <code>SoundParser</code>, <code>NonMalleable</code>, and
-allocation-free <code>DerOrd</code>. <code>impl_ber!</code> deliberately omits those traits: BER may
-accept several encodings of the same logical value, with different lengths.</p>
+<p>Both macros implement <code>SoundParser</code>: successful parsing produces a value
+consistent with the format. <code>impl_der!</code> additionally implements <code>StrictParser</code>,
+<code>NonMalleable</code>, and allocation-free <code>DerOrd</code>. BER may accept several encodings of
+the same value with different lengths, so <code>impl_ber!</code> does not promise strict length consumption or non-malleability.</p>
 <h2 id="calling-it"><a class="header" href="#calling-it">Calling it</a></h2>
 <p>Calling the parser, serializer, and the prepare methods is
 almost identical in shape to DSL-generated code, except that the format value is the

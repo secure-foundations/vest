@@ -13,7 +13,6 @@ license is retained as `LICENSE`.
 
 This is real protocol-shaped CBOR from an official interoperability corpus, not
 production traffic. We use every well-formed `output.cbor` value accepted by
-Vest and ciborium. The cbor4ii and minicbor serde bridges used by the synthetic
-benchmark cannot preserve CBOR tags through ciborium's generic `Value` type, so
-they are not included in this real-corpus comparison. Cryptographic verification
-is outside the timed operation.
+Vest and ciborium, cross-checked with the native cbor4ii and minicbor adapters.
+Both adapters preserve tags and borrow contiguous strings and bytes.
+Cryptographic verification is outside the timed operation.

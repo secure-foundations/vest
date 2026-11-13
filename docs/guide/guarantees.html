@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0e0bd3c9.js";
+            window.path_to_searchindex_js = "searchindex-63fac2c1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ec169036.js"></script>
@@ -207,26 +207,25 @@ that there are no out-of-bounds accesses.</li>
 <li><strong>Arithmetic safety.</strong> No integer overflow or underflow, including in length/offset
 calculations — the classic place where a hand-written parser goes wrong.</li>
 <li><strong>Termination and panic freedom.</strong> Parsing and serializing terminate and never
-panic, on <em>any</em> input.</li>
+panic.</li>
 </ul>
 <h2 id="correctness-and-security"><a class="header" href="#correctness-and-security">Correctness and security</a></h2>
-<p>These are the properties that prevent format confusion and malleability.
-Most, but not every format can satisfy all of them, and Vest is explicit
-about which properties hold for which formats.</p>
+<p>Parser soundness and completeness, serializer non-ambiguity, and serialize-parse roundtrip properties hold for every format Vest generates:</p>
 <ul>
-<li><strong>Parser soundness.</strong> If parsing succeeds, the result is a valid instance of
-the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.</li>
+<li><strong>Parser soundness.</strong> If parsing succeeds, the parsed value is a valid instance of the format.</li>
 <li><strong>Parser completeness.</strong> Every valid instance of the format can be successfully parsed from its byte representation.</li>
+<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the same bytes.</li>
+<li><strong>Serialize-parse roundtrip.</strong> For every valid value, serializing it and then parsing the result back yields the original value.</li>
+</ul>
+<p>The following are additional parser properties that hold for some formats, but not all.</p>
+<ul>
 <li><strong>Parser non-malleability.</strong> Each value has a <em>unique</em> byte representation accepted by the parser.
 Modifying or truncating its consumed bytes changes the outcome — it fails, or
 yields a different value.</li>
 <li><strong>Parser non-extensibility.</strong> Appending bytes to an accepted input does not
 change what was already parsed.</li>
 <li><strong>Parser productivity.</strong> A successful parse consumes at least one byte, making “progress” on the input.</li>
-<li><strong>Serializer non-ambiguity.</strong> Two distinct valid values never serialize to the
-same bytes.</li>
-<li><strong>Round trips.</strong> Together, for unambiguous, non-malleable formats, parsing and serializing are mutual inverses: parse-then-serialize reproduces the consumed
-bytes, and serialize-then-parse recovers the value.</li>
+<li><strong>Parser strictness.</strong> A successful parse always consumes exactly the number of bytes specified by the format.</li>
 </ul>
 <h2 id="when-a-format-cannot-be-non-malleable"><a class="header" href="#when-a-format-cannot-be-non-malleable">When a format cannot be non-malleable</a></h2>
 <p>While non-malleability is the gold standard in cryptographic systems, it

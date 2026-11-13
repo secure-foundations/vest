@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["ber_sequence_of_fmt","ber_sequence_of_normalized_fmt"],"struct":["BerSequenceOfFmt"]};
+window.SIDEBAR_ITEMS = {"fn":["ber_sequence_of_fmt"],"struct":["BerSequenceOfFmt"]};

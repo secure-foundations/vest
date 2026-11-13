@@ -177,6 +177,7 @@ broadcast use {
 impl SafeParser  for MessageFmt { /* .. */ }
 impl Productive  for MessageFmt { /* .. */ }
 impl SoundParser for MessageFmt { /* .. */ }
+impl StrictParser for MessageFmt { /* .. */ }
 impl SPRoundTripDps for MessageFmt { /* .. */ }
 impl NonMalleable for MessageFmt { /* .. */ }
 // ...plus more auxiliary proof traits, depending on the format
@@ -395,8 +396,8 @@ fn reencode(input: &[u8]) -> Result<Vec<u8>, ParseError> {
 }
 ```
 
-Note that no `prepare` is needed here. `parser_lemmas` already establish that `value` is
-consistent with the format and that `consumed` is its exact length. The equality covers only the consumed prefix.
+Note that no `prepare` is needed here. `parser_lemmas` uses `SoundParser` to establish
+consistency and `StrictParser` to equate `consumed` with the serialized length.
 It also inherently requires non-malleability: a malleable format, such as ASN.1 BER, may accept
 several encodings of the same value during parsing and serialize it to a different binary form.
 

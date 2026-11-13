@@ -29,27 +29,26 @@ These hold for every format Vest generates.
 - **Arithmetic safety.** No integer overflow or underflow, including in length/offset
   calculations — the classic place where a hand-written parser goes wrong.
 - **Termination and panic freedom.** Parsing and serializing terminate and never
-  panic, on *any* input.
+  panic.
 
 ## Correctness and security
 
-These are the properties that prevent format confusion and malleability.
-Most, but not every format can satisfy all of them, and Vest is explicit
-about which properties hold for which formats.
+Parser soundness and completeness, serializer non-ambiguity, and serialize-parse roundtrip properties hold for every format Vest generates:
 
-- **Parser soundness.** If parsing succeeds, the result is a valid instance of
-  the format, and the number of bytes consumed is exactly the formally specified wire length of that instance.
+- **Parser soundness.** If parsing succeeds, the parsed value is a valid instance of the format.
 - **Parser completeness.** Every valid instance of the format can be successfully parsed from its byte representation.
+- **Serializer non-ambiguity.** Two distinct valid values never serialize to the same bytes.
+- **Serialize-parse roundtrip.** For every valid value, serializing it and then parsing the result back yields the original value.
+
+The following are additional parser properties that hold for some formats, but not all.
+
 - **Parser non-malleability.** Each value has a *unique* byte representation accepted by the parser.
   Modifying or truncating its consumed bytes changes the outcome — it fails, or
   yields a different value.
 - **Parser non-extensibility.** Appending bytes to an accepted input does not
   change what was already parsed.
 - **Parser productivity.** A successful parse consumes at least one byte, making "progress" on the input.
-- **Serializer non-ambiguity.** Two distinct valid values never serialize to the
-  same bytes.
-- **Round trips.** Together, for unambiguous, non-malleable formats, parsing and serializing are mutual inverses: parse-then-serialize reproduces the consumed
-  bytes, and serialize-then-parse recovers the value.
+- **Parser strictness.** A successful parse always consumes exactly the number of bytes specified by the format.
 
 ## When a format cannot be non-malleable
 

@@ -25,7 +25,7 @@ See [Fairness rules](#fairness-rules) for how we ensure that the comparisons are
 | `tls` | 909 TLS 1.3 handshake messages captured from 16 public servers and Chrome | [Rustls 0.22](https://crates.io/crates/rustls/0.22.4)'s publicly exposed low-level (`internal`) message codec |
 | `bitcoin` | 4 consecutive mainnet blocks with 15,848 transactions | [`bitcoin`](https://crates.io/crates/bitcoin)'s consensus codec |
 | `cms` | 1,024 synthetic `ContentInfo` and 304 `SignedData` messages from NIST PKITS, European Commission DSS CAdES, and RFC 4134 | `rasn-cms`, RustCrypto `cms`, and, for `ContentInfo`, `cryptographic-message-syntax` |
-| `cbor` |  1,536 fragmented synthetic values and 49 real vectors from IETF COSE Working Group | `ciborium`, native `cbor4ii`, and `minicbor-serde` where their value models and consumption checks support the corpus |
+| `cbor` | 1,536 fragmented synthetic values and 49 real vectors from IETF COSE Working Group | `ciborium`, plus native `cbor4ii` and `minicbor` adapters that build borrowing-aware ASTs |
 
 The sources, manifests, licenses, and selection rules for the corpora are under [corpora/](corpora/).
 
@@ -33,22 +33,22 @@ The sources, manifests, licenses, and selection rules for the corpora are under 
 
 <!-- benchmark-results:start -->
 
-Full results: [`2026-10-14.md`](results/2026-10-14.md).
+Full results: [`2026-11-12.md`](results/2026-11-12.md).
 
 | Setting | Value |
 | --- | --- |
-| Run | 20261014T023832Z-d0de44ce |
+| Run | 20261112T222529Z-625e567a |
 | CPU | Apple M3 Pro |
 | RAM | 18 GiB |
 | Platform | macOS-27.0.1-arm64-arm-64bit-Mach-O |
 | Logical CPUs | 11 |
-| Compiler | rustc 1.98.1 (48a229cea 2026-09-01) |
-| Commit | e8f9c0c1426652249002b0d60183c217392ff691 |
+| Compiler | rustc 1.99.1 (58cf8f9c3 2026-10-13) |
+| Commit | 00583b9ae85a26a85815d8460200402a4b8922cf |
 | Uncommitted files | Yes |
-| Source/corpus SHA256 | 94664535838b907f5a46bcbdf35ca633854d9474589f2b0fdcd19ac070049339 |
+| Source/corpus SHA256 | 800c0fe2b1b9c504495c4c4d9a460337a8031771a1793148f0a6e985cc639851 |
 | Sampling | 100 samples; 3 s warmup; 5 s target |
-| Process-order seed | 3804991242 |
-| Coverage | 51 of 51 entries |
+| Process-order seed | 1234 |
+| Coverage | 54 of 54 entries |
 | Allocator | std::alloc::System; counted separately, without timing |
 
 Ratios are Vest/baseline throughput. 95% intervals describe within-run sampling noise, not between-run variability.
@@ -59,122 +59,125 @@ Ratios are Vest/baseline throughput. 95% intervals describe within-run sampling 
 
 | Format | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- | --- |
-| `bits` | Vest | 3,640.0 [3,635.3–3,642.8] | — |
-| `bits` | hand-written | 4,991.8 [4,988.2–5,006.0] | 0.73× [0.73–0.73] |
-| `bounded_list` | Vest | 6,158.7 [6,114.3–6,186.5] | — |
-| `bounded_list` | hand-written | 6,581.8 [6,283.7–6,683.4] | 0.94× [0.92–0.98] |
-| `nest` | Vest | 15,582.0 [15,336.7–15,684.1] | — |
-| `nest` | hand-written | 20,685.9 [20,630.4–20,709.1] | 0.75× [0.74–0.76] |
-| `table` | Vest | 25,880.5 [25,824.1–25,937.0] | — |
-| `table` | hand-written | 26,180.7 [26,035.5–26,505.1] | 0.99× [0.98–0.99] |
+| `bits` | Vest | 3,658.0 [3,635.0–3,684.8] | — |
+| `bits` | hand-written | 5,074.7 [5,061.5–5,101.6] | 0.72× [0.72–0.73] |
+| `bounded_list` | Vest | 7,313.2 [6,985.4–7,550.4] | — |
+| `bounded_list` | hand-written | 8,109.0 [7,939.0–8,200.9] | 0.90× [0.86–0.93] |
+| `nest` | Vest | 16,140.8 [16,083.0–16,220.7] | — |
+| `nest` | hand-written | 21,929.5 [21,813.0–21,979.0] | 0.74× [0.73–0.74] |
+| `table` | Vest | 28,510.3 [28,472.8–28,537.7] | — |
+| `table` | hand-written | 28,220.3 [28,154.9–28,273.7] | 1.01× [1.01–1.01] |
 
 #### Serialize
 
 | Format | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- | --- |
-| `bits` | Vest | 5,294.9 [5,286.6–5,304.4] | — |
-| `bits` | hand-written | 5,667.4 [5,659.8–5,672.9] | 0.93× [0.93–0.94] |
-| `bounded_list` | Vest | 2,565.2 [2,560.1–2,572.7] | — |
-| `bounded_list` | hand-written | 2,308.2 [2,296.4–2,321.9] | 1.11× [1.11–1.12] |
-| `nest` | Vest | 25,429.2 [25,378.5–25,469.6] | — |
-| `nest` | hand-written | 15,860.9 [15,691.2–15,969.4] | 1.60× [1.59–1.62] |
-| `table` | Vest | 21,473.0 [21,439.4–21,506.5] | — |
-| `table` | hand-written | 19,770.7 [19,718.0–19,801.8] | 1.09× [1.08–1.09] |
+| `bits` | Vest | 5,384.4 [5,364.3–5,407.8] | — |
+| `bits` | hand-written | 5,654.6 [5,640.2–5,670.0] | 0.95× [0.95–0.96] |
+| `bounded_list` | Vest | 2,762.2 [2,755.6–2,772.3] | — |
+| `bounded_list` | hand-written | 2,676.3 [2,661.5–2,682.7] | 1.03× [1.03–1.04] |
+| `nest` | Vest | 25,532.5 [25,423.3–25,617.5] | — |
+| `nest` | hand-written | 19,566.4 [19,154.2–20,009.7] | 1.30× [1.28–1.33] |
+| `table` | Vest | 22,585.9 [22,527.5–22,645.3] | — |
+| `table` | hand-written | 21,265.0 [21,159.8–21,344.0] | 1.06× [1.06–1.07] |
 
 ### bitcoin/blocks/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 4,523.8 [4,497.1–4,541.0] | — |
-| rust-bitcoin | 1,512.5 [1,505.2–1,517.7] | 2.99× [2.97–3.01] |
+| Vest | 5,400.0 [5,294.9–5,459.6] | — |
+| rust-bitcoin | 1,682.0 [1,680.3–1,683.9] | 3.21× [3.15–3.25] |
 
 ### bitcoin/blocks/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 6,000.5 [5,984.6–6,015.8] | — |
-| rust-bitcoin | 5,139.5 [5,123.5–5,153.7] | 1.17× [1.16–1.17] |
+| Vest | 6,758.8 [6,681.7–6,788.4] | — |
+| rust-bitcoin | 5,570.7 [5,495.2–5,603.8] | 1.21× [1.20–1.23] |
 
 ### cbor/cose/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 644.8 [643.6–645.5] | — |
-| cbor4ii | 621.1 [618.6–622.8] | 1.04× [1.04–1.04] |
-| ciborium | 217.7 [217.4–218.0] | 2.96× [2.96–2.97] |
+| Vest | 968.5 [962.0–972.8] | — |
+| cbor4ii | 924.0 [920.5–932.3] | 1.05× [1.04–1.05] |
+| ciborium | 224.9 [223.4–226.1] | 4.31× [4.27–4.34] |
+| minicbor | 499.9 [496.1–503.7] | 1.94× [1.92–1.95] |
 
 ### cbor/cose/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 919.9 [917.0–923.1] | — |
-| cbor4ii | 473.0 [471.3–474.3] | 1.94× [1.94–1.95] |
-| ciborium | 409.7 [407.9–410.3] | 2.25× [2.24–2.26] |
+| Vest | 909.7 [905.9–916.6] | — |
+| cbor4ii | 460.8 [454.1–465.1] | 1.97× [1.96–2.00] |
+| ciborium | 421.3 [418.4–423.5] | 2.16× [2.15–2.18] |
+| minicbor | 517.8 [514.5–524.0] | 1.76× [1.74–1.77] |
 
 ### cbor/synthetic/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 494.6 [493.8–495.0] | — |
-| ciborium | 192.4 [191.6–193.7] | 2.57× [2.55–2.58] |
-| minicbor-serde | 471.9 [471.2–472.7] | 1.05× [1.05–1.05] |
+| Vest | 628.3 [619.2–635.8] | — |
+| cbor4ii | 693.9 [685.3–696.7] | 0.91× [0.89–0.92] |
+| ciborium | 201.7 [198.4–203.4] | 3.12× [3.07–3.18] |
+| minicbor | 553.0 [551.4–553.6] | 1.14× [1.12–1.15] |
 
 ### cbor/synthetic/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 688.5 [683.8–690.7] | — |
-| cbor4ii | 467.9 [466.3–469.6] | 1.47× [1.46–1.48] |
-| ciborium | 386.6 [386.0–387.1] | 1.78× [1.77–1.79] |
-| minicbor-serde | 488.5 [483.7–489.7] | 1.41× [1.40–1.42] |
+| Vest | 702.4 [698.0–706.5] | — |
+| cbor4ii | 442.2 [440.1–445.7] | 1.59× [1.57–1.60] |
+| ciborium | 387.3 [382.7–391.1] | 1.81× [1.79–1.84] |
+| minicbor | 450.2 [446.2–456.1] | 1.56× [1.54–1.58] |
 
 ### cms/content_info/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 4,434.9 [4,429.1–4,444.2] | — |
-| RustCrypto-cms | 2,895.9 [2,891.0–2,905.8] | 1.53× [1.53–1.54] |
-| cryptographic-message-syntax | 3,642.4 [3,636.0–3,647.8] | 1.22× [1.22–1.22] |
-| rasn-cms | 3,152.6 [3,137.8–3,180.2] | 1.41× [1.39–1.41] |
+| Vest | 4,630.2 [4,592.9–4,661.3] | — |
+| RustCrypto-cms | 3,198.7 [3,180.4–3,211.9] | 1.45× [1.43–1.46] |
+| cryptographic-message-syntax | 3,590.9 [3,574.6–3,622.0] | 1.29× [1.27–1.30] |
+| rasn-cms | 3,399.3 [3,374.3–3,406.5] | 1.36× [1.35–1.38] |
 
 ### cms/content_info/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 5,433.1 [5,417.0–5,441.3] | — |
-| RustCrypto-cms | 5,798.5 [5,788.3–5,819.1] | 0.94× [0.93–0.94] |
-| cryptographic-message-syntax | 16,144.3 [16,065.4–16,215.0] | 0.34× [0.33–0.34] |
-| rasn-cms | 1,077.3 [1,074.0–1,079.4] | 5.04× [5.03–5.06] |
+| Vest | 5,414.9 [5,374.6–5,439.5] | — |
+| RustCrypto-cms | 6,292.9 [6,248.9–6,308.5] | 0.86× [0.85–0.87] |
+| cryptographic-message-syntax | 16,444.4 [16,364.2–16,522.0] | 0.33× [0.33–0.33] |
+| rasn-cms | 1,132.4 [1,112.4–1,143.4] | 4.78× [4.72–4.87] |
 
 ### cms/real_signed_data/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 5,875.9 [5,856.2–5,895.3] | — |
-| RustCrypto-cms | 2,735.6 [2,716.1–2,744.4] | 2.15× [2.14–2.16] |
-| rasn-cms | 2,893.2 [2,856.1–2,954.3] | 2.03× [1.99–2.06] |
+| Vest | 6,815.9 [6,796.5–6,827.9] | — |
+| RustCrypto-cms | 2,996.1 [2,943.5–3,035.5] | 2.27× [2.24–2.32] |
+| rasn-cms | 3,381.1 [3,373.1–3,385.2] | 2.02× [2.01–2.02] |
 
 ### cms/real_signed_data/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 2,673.6 [2,665.7–2,679.9] | — |
-| RustCrypto-cms | 5,056.9 [5,032.4–5,069.2] | 0.53× [0.53–0.53] |
-| rasn-cms | 1,141.2 [1,130.7–1,163.4] | 2.34× [2.30–2.37] |
+| Vest | 3,375.6 [3,348.4–3,390.7] | — |
+| RustCrypto-cms | 5,287.8 [5,255.6–5,337.4] | 0.64× [0.63–0.64] |
+| rasn-cms | 1,298.4 [1,281.3–1,322.1] | 2.60× [2.55–2.63] |
 
 ### tls/handshakes/parse
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 7,310.7 [7,244.7–7,403.0] | — |
-| Rustls | 3,494.5 [3,490.0–3,498.9] | 2.09× [2.07–2.12] |
+| Vest | 8,160.2 [8,151.1–8,169.3] | — |
+| Rustls | 3,688.7 [3,650.8–3,703.3] | 2.21× [2.20–2.24] |
 
 ### tls/handshakes/serialize
 
 | Implementation | MiB/s [95% CI] | Vest/baseline [95% CI] |
 | --- | --- | --- |
-| Vest | 10,925.9 [10,849.1–11,007.3] | — |
-| Rustls | 3,636.2 [3,631.8–3,642.7] | 3.00× [2.98–3.03] |
+| Vest | 11,019.3 [10,967.4–11,075.6] | — |
+| Rustls | 3,746.4 [3,733.5–3,773.4] | 2.94× [2.92–2.96] |
 
 
 <!-- benchmark-results:end -->
@@ -183,6 +186,10 @@ Ratios are Vest/baseline throughput. 95% intervals describe within-run sampling 
 
 Run these commands from `vest_bench/`. Rust and Python 3.10 or later must be
 available; Cargo uses the workspace's locked dependencies and bench profile.
+The runner and Makefile select the Rust version recorded in [`verus.json`](../verus.json),
+matching the pinned Verus release.
+That Rust toolchain must be installed with rustup; running benchmarks does not
+require the Verus executable itself.
 
 ### Build and check
 
@@ -201,9 +208,9 @@ make report                     # print the latest full-suite results
 make report REPORT_ARGS=--write  # regenerate results/<date>.md and this README
 ```
 
-The full suite has 51 entries across 10 workloads. Each entry processes its whole
+The full suite has 54 entries across 10 workloads. Each entry processes its whole
 corpus, using 100 samples, three seconds of warmup, and a five-second measurement
-target. That budgets at least 6 minutes 48 seconds, plus builds, corpus checks,
+target. That budgets at least 7 minutes 12 seconds, plus builds, corpus checks,
 and statistical analysis. Criterion may extend a measurement to collect enough
 samples. Run on an idle machine; avoid other benchmarks or builds. Preparation,
 result lifetime, and output-buffer policies are described in [Fairness rules](#fairness-rules).
@@ -301,23 +308,20 @@ Compile-time assertions check size and alignment; `tests/micro.rs` checks full c
 
 For real formats, parsers translate the same byte inputs into their libraries'
 native value types; layouts and ownership need not match (which mimics real-world usage).
-Vest's parsers borrow supported payloads; collections allocate, and fragmented
-BER/CBOR strings are flattened into owned storage.
+The pinned `rustls`, `rust-bitcoin`, `rasn-CMS`, `RustCrypto-CMS`, and `ciborium` only expose *owned*
+types and hence do not support zero-copy.
+`cbor4ii` and `minicbor` instead do provide native decoding traits to build selective zero-copy AST
+(with `Cow` strings and bytes): definite strings borrow
+from the input, fragmented strings/bytes are flattened into owned buffers.
+Map order, duplicates, and tags are all preserved for CBOR parsers.
 
-The pinned Rustls handshake, rust-bitcoin `Block`, rasn-CMS, and RustCrypto CMS types own their
-payloads; none has a borrowing-mode switch. `cbor4ii::core::Value` and
-`ciborium::Value` also contain `Vec<u8>`/`String`, so they cannot borrow.
-The minicbor-serde comparison decodes into `ciborium::Value`. cbor4ii and
-minicbor support borrowed fields in custom types, but that would require another
-value model and benchmark, which we leave for future work.
-
-Native parsing work also differs: RustCrypto retains CMS eContent as
+Native parsing work differs across ASN.1 libraries: RustCrypto retains CMS eContent as
 `Any`, while Vest and rasn fully parse and flatten it; bcder's synthetic
 `ContentInfo` captures the inner content without decoding its schema.
 
 For serialization, the benchmarks measure the throughput of *realistic* usage patterns, which may differ among libraries.
 Only implementations that support computing the exact length before the actual serialization may reuse a pre-sized output buffer.
-The others allocate a fresh output for every value and pay for its growth (which is fair, because the API does not allow the caller to preallocate).
+The others allocate a fresh output for every value and pay for its dynamic growth (which is fair, because the API does not allow the caller to preallocate).
 Final outputs are retained until the timer stops; serializers' temporary allocation and destruction (if any) are timed.
 
 | Implementation | Timed serialization |
@@ -329,7 +333,8 @@ Final outputs are retained until the timer stops; serializers' temporary allocat
 | bcder / cryptographic-message-syntax | `Values::encoded_len`, clear/reserve the reusable vector, then `write_encoded` |
 | Rustls | `Vec::new()`, then `encode` |
 | rasn | `rasn::der::encode` (that produces a `Vec<u8>`) |
-| ciborium, native cbor4ii, minicbor-serde | Start from `Vec::new()`, then encode |
+| ciborium | Start from `Vec::new()`, then encode |
+| `cbor4ii` and `minicbor` | `encode` produces a `Vec<u8>` |
 
 Before measurement, tests and corpus checks validate full input consumption,
 parsed contents, and matching serialized bytes.
@@ -338,11 +343,11 @@ including when another workspace dependency enables it. Allocation audits use
 a separate counting build; the timed binaries use the uninstrumented system
 allocator.
 
-We found two baseline limitations during the benchmark development:
+We found these baseline issues during benchmark development:
 
 - `cryptographic-message-syntax` 0.28.0 omits the `ContentInfo` `[0] EXPLICIT`
   wrapper when encoding. The benchmark builds the correct wrapper with public
   bcder combinators, including that work in the timed loop. Issue filed: https://github.com/indygreg/cryptography-rs/issues/99
-- `cbor4ii` 1.2.3 leaves indefinite-string break bytes unread. It is excluded
-  from fragmented-input parsing, but included in real COSE parsing and in
-  serialization, where the consumption and output checks pass. Issue filed: https://github.com/quininer/cbor4ii/issues/60
+- `cbor4ii` 1.2.3 left indefinite-string break bytes unread. This was fixed
+  upstream in 1.2.4, which this suite now uses for both synthetic and COSE
+  parsing. Issue filed: https://github.com/quininer/cbor4ii/issues/60

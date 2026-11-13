@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["TLVOf","TVNode","Uninhabited","VLData","VLDataOf"],"mod":["proof","spec"],"struct":["Implicit","NBytesOf","TLVal","TVLeaf","TVOr","TagValNode","VariedLen","VoidTag"],"trait":["DepCombinator"],"type":["KVFormat"]};

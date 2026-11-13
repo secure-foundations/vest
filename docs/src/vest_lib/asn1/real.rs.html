@@ -931,232 +931,234 @@
 <a href=#931 id=931 data-nosnippet>931</a>    }
 <a href=#932 id=932 data-nosnippet>932</a>
 <a href=#933 id=933 data-nosnippet>933</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SoundParser <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#934 id=934 data-nosnippet>934</a>        proof <span class="kw">fn </span>lemma_parse_sound_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#935 id=935 data-nosnippet>935</a>            real_fmt::&lt;DER&gt;().lemma_parse_sound_consumption(ibuf);
+<a href=#934 id=934 data-nosnippet>934</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#935 id=935 data-nosnippet>935</a>            real_fmt::&lt;DER&gt;().lemma_parse_sound_value(ibuf);
 <a href=#936 id=936 data-nosnippet>936</a>        }
-<a href=#937 id=937 data-nosnippet>937</a>
-<a href=#938 id=938 data-nosnippet>938</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#939 id=939 data-nosnippet>939</a>            real_fmt::&lt;DER&gt;().lemma_parse_sound_value(ibuf);
-<a href=#940 id=940 data-nosnippet>940</a>        }
-<a href=#941 id=941 data-nosnippet>941</a>    }
-<a href=#942 id=942 data-nosnippet>942</a>
-<a href=#943 id=943 data-nosnippet>943</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#944 id=944 data-nosnippet>944</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#945 id=945 data-nosnippet>945</a>            real_fmt::&lt;DER&gt;().lemma_serialize_len(v);
-<a href=#946 id=946 data-nosnippet>946</a>        }
-<a href=#947 id=947 data-nosnippet>947</a>    }
-<a href=#948 id=948 data-nosnippet>948</a>
-<a href=#949 id=949 data-nosnippet>949</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#950 id=950 data-nosnippet>950</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
-<a href=#951 id=951 data-nosnippet>951</a>            real_fmt::&lt;DER&gt;().theorem_serialize_dps_parse_roundtrip(v, obuf);
-<a href=#952 id=952 data-nosnippet>952</a>        }
-<a href=#953 id=953 data-nosnippet>953</a>    }
-<a href=#954 id=954 data-nosnippet>954</a>
-<a href=#955 id=955 data-nosnippet>955</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; NonMalleable <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#956 id=956 data-nosnippet>956</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
-<a href=#957 id=957 data-nosnippet>957</a>            real_fmt::&lt;DER&gt;().lemma_parse_non_malleable(buf1, buf2);
-<a href=#958 id=958 data-nosnippet>958</a>        }
-<a href=#959 id=959 data-nosnippet>959</a>    }
-<a href=#960 id=960 data-nosnippet>960</a>
-<a href=#961 id=961 data-nosnippet>961</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#962 id=962 data-nosnippet>962</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#963 id=963 data-nosnippet>963</a>            real_fmt::&lt;DER&gt;().lemma_serialize_equiv_on_empty(v);
-<a href=#964 id=964 data-nosnippet>964</a>        }
-<a href=#965 id=965 data-nosnippet>965</a>    }
-<a href=#966 id=966 data-nosnippet>966</a>
-<a href=#967 id=967 data-nosnippet>967</a>}
+<a href=#937 id=937 data-nosnippet>937</a>    }
+<a href=#938 id=938 data-nosnippet>938</a>
+<a href=#939 id=939 data-nosnippet>939</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; StrictParser <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#940 id=940 data-nosnippet>940</a>        proof <span class="kw">fn </span>lemma_parse_strict_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#941 id=941 data-nosnippet>941</a>            real_fmt::&lt;DER&gt;().lemma_parse_strict_consumption(ibuf);
+<a href=#942 id=942 data-nosnippet>942</a>        }
+<a href=#943 id=943 data-nosnippet>943</a>    }
+<a href=#944 id=944 data-nosnippet>944</a>
+<a href=#945 id=945 data-nosnippet>945</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#946 id=946 data-nosnippet>946</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#947 id=947 data-nosnippet>947</a>            real_fmt::&lt;DER&gt;().lemma_serialize_len(v);
+<a href=#948 id=948 data-nosnippet>948</a>        }
+<a href=#949 id=949 data-nosnippet>949</a>    }
+<a href=#950 id=950 data-nosnippet>950</a>
+<a href=#951 id=951 data-nosnippet>951</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#952 id=952 data-nosnippet>952</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
+<a href=#953 id=953 data-nosnippet>953</a>            real_fmt::&lt;DER&gt;().theorem_serialize_dps_parse_roundtrip(v, obuf);
+<a href=#954 id=954 data-nosnippet>954</a>        }
+<a href=#955 id=955 data-nosnippet>955</a>    }
+<a href=#956 id=956 data-nosnippet>956</a>
+<a href=#957 id=957 data-nosnippet>957</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; NonMalleable <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#958 id=958 data-nosnippet>958</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
+<a href=#959 id=959 data-nosnippet>959</a>            real_fmt::&lt;DER&gt;().lemma_parse_non_malleable(buf1, buf2);
+<a href=#960 id=960 data-nosnippet>960</a>        }
+<a href=#961 id=961 data-nosnippet>961</a>    }
+<a href=#962 id=962 data-nosnippet>962</a>
+<a href=#963 id=963 data-nosnippet>963</a>    <span class="kw">impl</span>&lt;<span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#964 id=964 data-nosnippet>964</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#965 id=965 data-nosnippet>965</a>            real_fmt::&lt;DER&gt;().lemma_serialize_equiv_on_empty(v);
+<a href=#966 id=966 data-nosnippet>966</a>        }
+<a href=#967 id=967 data-nosnippet>967</a>    }
 <a href=#968 id=968 data-nosnippet>968</a>
-<a href=#969 id=969 data-nosnippet>969</a><span class="doccomment">/// Borrowed, exact BER/DER REAL contents.
-<a href=#970 id=970 data-nosnippet>970</a></span><span class="kw">pub struct </span>Real&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt; {
-<a href=#971 id=971 data-nosnippet>971</a>    contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
-<a href=#972 id=972 data-nosnippet>972</a>}
-<a href=#973 id=973 data-nosnippet>973</a>
-<a href=#974 id=974 data-nosnippet>974</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; DeepView <span class="kw">for </span>Real&lt;<span class="lifetime">'a</span>, DER&gt; {
-<a href=#975 id=975 data-nosnippet>975</a>    <span class="kw">type </span>V = RealSpec;
-<a href=#976 id=976 data-nosnippet>976</a>
-<a href=#977 id=977 data-nosnippet>977</a>    closed spec <span class="kw">fn </span>deep_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::V {
-<a href=#978 id=978 data-nosnippet>978</a>        <span class="self">self</span>.contents.deep_view()
-<a href=#979 id=979 data-nosnippet>979</a>    }
-<a href=#980 id=980 data-nosnippet>980</a>}
-<a href=#981 id=981 data-nosnippet>981</a>
-<a href=#982 id=982 data-nosnippet>982</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Real&lt;<span class="lifetime">'a</span>, DER&gt; {
-<a href=#983 id=983 data-nosnippet>983</a>    <span class="attr">#[verifier::type_invariant]
-<a href=#984 id=984 data-nosnippet>984</a>    </span>spec <span class="kw">fn </span>wf(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#985 id=985 data-nosnippet>985</a>        real_bytes_wf::&lt;DER&gt;(<span class="self">self</span>.deep_view())
-<a href=#986 id=986 data-nosnippet>986</a>    }
-<a href=#987 id=987 data-nosnippet>987</a>
-<a href=#988 id=988 data-nosnippet>988</a>    <span class="kw">fn </span>new_verified(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="self">Self</span>)
-<a href=#989 id=989 data-nosnippet>989</a>        requires
-<a href=#990 id=990 data-nosnippet>990</a>            real_bytes_wf::&lt;DER&gt;(contents@),
-<a href=#991 id=991 data-nosnippet>991</a>        ensures
-<a href=#992 id=992 data-nosnippet>992</a>            value.deep_view() == contents.deep_view(),
-<a href=#993 id=993 data-nosnippet>993</a>    {
-<a href=#994 id=994 data-nosnippet>994</a>        proof {
-<a href=#995 id=995 data-nosnippet>995</a>            assert(contents.deep_view() == contents@);
-<a href=#996 id=996 data-nosnippet>996</a>        }
-<a href=#997 id=997 data-nosnippet>997</a>        <span class="self">Self </span>{ contents }
-<a href=#998 id=998 data-nosnippet>998</a>    }
-<a href=#999 id=999 data-nosnippet>999</a>
-<a href=#1000 id=1000 data-nosnippet>1000</a>    <span class="doccomment">/// Validates and borrows REAL contents under this format's encoding rules.
-<a href=#1001 id=1001 data-nosnippet>1001</a>    </span><span class="kw">pub fn </span>from_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
-<a href=#1002 id=1002 data-nosnippet>1002</a>        ensures
-<a href=#1003 id=1003 data-nosnippet>1003</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
-<a href=#1004 id=1004 data-nosnippet>1004</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; real_bytes_wf::&lt;DER&gt;(contents@),
-<a href=#1005 id=1005 data-nosnippet>1005</a>    {
-<a href=#1006 id=1006 data-nosnippet>1006</a>        <span class="kw">if </span>real_bytes_wf_exec::&lt;DER&gt;(contents) {
-<a href=#1007 id=1007 data-nosnippet>1007</a>            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new_verified(contents))
-<a href=#1008 id=1008 data-nosnippet>1008</a>        } <span class="kw">else </span>{
-<a href=#1009 id=1009 data-nosnippet>1009</a>            <span class="prelude-val">Err</span>(ParseError::non_canonical())
-<a href=#1010 id=1010 data-nosnippet>1010</a>        }
-<a href=#1011 id=1011 data-nosnippet>1011</a>    }
-<a href=#1012 id=1012 data-nosnippet>1012</a>
-<a href=#1013 id=1013 data-nosnippet>1013</a>    <span class="kw">pub fn </span>contents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8])
-<a href=#1014 id=1014 data-nosnippet>1014</a>        ensures
-<a href=#1015 id=1015 data-nosnippet>1015</a>            contents.deep_view() == <span class="self">self</span>.deep_view(),
-<a href=#1016 id=1016 data-nosnippet>1016</a>    {
-<a href=#1017 id=1017 data-nosnippet>1017</a>        <span class="self">self</span>.contents
-<a href=#1018 id=1018 data-nosnippet>1018</a>    }
-<a href=#1019 id=1019 data-nosnippet>1019</a>}
-<a href=#1020 id=1020 data-nosnippet>1020</a>
-<a href=#1021 id=1021 data-nosnippet>1021</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Real&lt;<span class="lifetime">'a</span>, <span class="bool-val">true</span>&gt; {
-<a href=#1022 id=1022 data-nosnippet>1022</a>    <span class="doccomment">/// Validates and borrows canonical DER REAL contents.
-<a href=#1023 id=1023 data-nosnippet>1023</a>    </span><span class="kw">pub fn </span>from_der_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
-<a href=#1024 id=1024 data-nosnippet>1024</a>        ensures
-<a href=#1025 id=1025 data-nosnippet>1025</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
-<a href=#1026 id=1026 data-nosnippet>1026</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; der_real_bytes_wf(contents@),
-<a href=#1027 id=1027 data-nosnippet>1027</a>    {
-<a href=#1028 id=1028 data-nosnippet>1028</a>        <span class="self">Self</span>::from_contents(contents)
-<a href=#1029 id=1029 data-nosnippet>1029</a>    }
-<a href=#1030 id=1030 data-nosnippet>1030</a>}
-<a href=#1031 id=1031 data-nosnippet>1031</a>
-<a href=#1032 id=1032 data-nosnippet>1032</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Real&lt;<span class="lifetime">'a</span>, <span class="bool-val">false</span>&gt; {
-<a href=#1033 id=1033 data-nosnippet>1033</a>    <span class="doccomment">/// Validates and borrows any well-formed BER REAL contents.
-<a href=#1034 id=1034 data-nosnippet>1034</a>    </span><span class="kw">pub fn </span>from_ber_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
-<a href=#1035 id=1035 data-nosnippet>1035</a>        ensures
-<a href=#1036 id=1036 data-nosnippet>1036</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
-<a href=#1037 id=1037 data-nosnippet>1037</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; ber_real_bytes_wf(contents@),
-<a href=#1038 id=1038 data-nosnippet>1038</a>    {
-<a href=#1039 id=1039 data-nosnippet>1039</a>        <span class="self">Self</span>::from_contents(contents)
-<a href=#1040 id=1040 data-nosnippet>1040</a>    }
-<a href=#1041 id=1041 data-nosnippet>1041</a>}
-<a href=#1042 id=1042 data-nosnippet>1042</a>
-<a href=#1043 id=1043 data-nosnippet>1043</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#1044 id=1044 data-nosnippet>1044</a>    <span class="kw">type </span>PT = Real&lt;<span class="lifetime">'a</span>, DER&gt;;
-<a href=#1045 id=1045 data-nosnippet>1045</a>
-<a href=#1046 id=1046 data-nosnippet>1046</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'a </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#1047 id=1047 data-nosnippet>1047</a>        <span class="kw">let </span>(n, contents) = Tail.parse(ibuf)<span class="question-mark">?</span>;
-<a href=#1048 id=1048 data-nosnippet>1048</a>        proof {
-<a href=#1049 id=1049 data-nosnippet>1049</a>            contents.deep_view_eq_view();
-<a href=#1050 id=1050 data-nosnippet>1050</a>        }
-<a href=#1051 id=1051 data-nosnippet>1051</a>        <span class="kw">if </span>real_bytes_wf_exec::&lt;DER&gt;(contents) {
-<a href=#1052 id=1052 data-nosnippet>1052</a>            <span class="kw">let </span>value = Real::new_verified(contents);
-<a href=#1053 id=1053 data-nosnippet>1053</a>            <span class="prelude-val">Ok</span>((n, value))
-<a href=#1054 id=1054 data-nosnippet>1054</a>        } <span class="kw">else </span>{
-<a href=#1055 id=1055 data-nosnippet>1055</a>            <span class="prelude-val">Err</span>(ParseError::non_canonical())
-<a href=#1056 id=1056 data-nosnippet>1056</a>        }
-<a href=#1057 id=1057 data-nosnippet>1057</a>    }
-<a href=#1058 id=1058 data-nosnippet>1058</a>}
-<a href=#1059 id=1059 data-nosnippet>1059</a>
-<a href=#1060 id=1060 data-nosnippet>1060</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Output: OutputBuf, <span class="kw">const </span>DER: bool&gt; Serializer&lt;Output, Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#1061 id=1061 data-nosnippet>1061</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#1062 id=1062 data-nosnippet>1062</a>        proof {
-<a href=#1063 id=1063 data-nosnippet>1063</a>            use_type_invariant(v);
-<a href=#1064 id=1064 data-nosnippet>1064</a>        }
-<a href=#1065 id=1065 data-nosnippet>1065</a>        Tail.serialize_into(<span class="kw-2">&amp;</span>v.contents, obuf);
-<a href=#1066 id=1066 data-nosnippet>1066</a>    }
-<a href=#1067 id=1067 data-nosnippet>1067</a>}
-<a href=#1068 id=1068 data-nosnippet>1068</a>
-<a href=#1069 id=1069 data-nosnippet>1069</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Prepare&lt;Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#1070 id=1070 data-nosnippet>1070</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#1071 id=1071 data-nosnippet>1071</a>        proof {
-<a href=#1072 id=1072 data-nosnippet>1072</a>            use_type_invariant(v);
-<a href=#1073 id=1073 data-nosnippet>1073</a>        }
-<a href=#1074 id=1074 data-nosnippet>1074</a>        Tail.prepare(<span class="kw-2">&amp;</span>v.contents)
-<a href=#1075 id=1075 data-nosnippet>1075</a>    }
-<a href=#1076 id=1076 data-nosnippet>1076</a>}
-<a href=#1077 id=1077 data-nosnippet>1077</a>
-<a href=#1078 id=1078 data-nosnippet>1078</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
-<a href=#1079 id=1079 data-nosnippet>1079</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;) -&gt; usize {
-<a href=#1080 id=1080 data-nosnippet>1080</a>        Tail.length(<span class="kw-2">&amp;</span>v.contents)
-<a href=#1081 id=1081 data-nosnippet>1081</a>    }
-<a href=#1082 id=1082 data-nosnippet>1082</a>}
-<a href=#1083 id=1083 data-nosnippet>1083</a>
-<a href=#1084 id=1084 data-nosnippet>1084</a>} <span class="comment">// verus!
-<a href=#1085 id=1085 data-nosnippet>1085</a></span><span class="attr">#[cfg(test)]
-<a href=#1086 id=1086 data-nosnippet>1086</a></span><span class="kw">mod </span>tests {
-<a href=#1087 id=1087 data-nosnippet>1087</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#1088 id=1088 data-nosnippet>1088</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::ber::REAL <span class="kw">as </span>BER_REAL;
-<a href=#1089 id=1089 data-nosnippet>1089</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::der::REAL;
-<a href=#1090 id=1090 data-nosnippet>1090</a>    <span class="kw">use </span><span class="kw">crate</span>::core::exec::{Parser, Prepare, SerializerExt};
-<a href=#1091 id=1091 data-nosnippet>1091</a>
-<a href=#1092 id=1092 data-nosnippet>1092</a>    <span class="kw">fn </span>roundtrip(contents: <span class="kw-2">&amp;</span>[u8]) {
-<a href=#1093 id=1093 data-nosnippet>1093</a>        <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
-<a href=#1094 id=1094 data-nosnippet>1094</a>        input.extend_from_slice(contents);
-<a href=#1095 id=1095 data-nosnippet>1095</a>        <span class="kw">let </span>(<span class="kw">_</span>, value) = REAL.parse(&amp;&amp;input[..]).unwrap();
-<a href=#1096 id=1096 data-nosnippet>1096</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0</span>; REAL.prepare(<span class="kw-2">&amp;</span>value).unwrap()];
-<a href=#1097 id=1097 data-nosnippet>1097</a>        REAL.serialize(<span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>output);
-<a href=#1098 id=1098 data-nosnippet>1098</a>        <span class="macro">assert_eq!</span>(output, input);
-<a href=#1099 id=1099 data-nosnippet>1099</a>    }
-<a href=#1100 id=1100 data-nosnippet>1100</a>
-<a href=#1101 id=1101 data-nosnippet>1101</a>    <span class="kw">fn </span>roundtrip_ber(contents: <span class="kw-2">&amp;</span>[u8]) {
-<a href=#1102 id=1102 data-nosnippet>1102</a>        <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
-<a href=#1103 id=1103 data-nosnippet>1103</a>        input.extend_from_slice(contents);
-<a href=#1104 id=1104 data-nosnippet>1104</a>        <span class="kw">let </span>(<span class="kw">_</span>, value) = BER_REAL.parse(&amp;&amp;input[..]).unwrap();
-<a href=#1105 id=1105 data-nosnippet>1105</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0</span>; BER_REAL.prepare(<span class="kw-2">&amp;</span>value).unwrap()];
-<a href=#1106 id=1106 data-nosnippet>1106</a>        BER_REAL.serialize(<span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>output);
-<a href=#1107 id=1107 data-nosnippet>1107</a>        <span class="macro">assert_eq!</span>(output, input);
-<a href=#1108 id=1108 data-nosnippet>1108</a>    }
-<a href=#1109 id=1109 data-nosnippet>1109</a>
-<a href=#1110 id=1110 data-nosnippet>1110</a>    <span class="attr">#[test]
-<a href=#1111 id=1111 data-nosnippet>1111</a>    </span><span class="kw">fn </span>real_roundtrips_all_der_families() {
-<a href=#1112 id=1112 data-nosnippet>1112</a>        roundtrip(<span class="kw-2">&amp;</span>[]); <span class="comment">// +0
-<a href=#1113 id=1113 data-nosnippet>1113</a>        </span>roundtrip(<span class="kw-2">&amp;</span>[REAL_MINUS_ZERO]);
-<a href=#1114 id=1114 data-nosnippet>1114</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_PLUS_INFINITY]);
-<a href=#1115 id=1115 data-nosnippet>1115</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_MINUS_INFINITY]);
-<a href=#1116 id=1116 data-nosnippet>1116</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_NOT_A_NUMBER]);
-<a href=#1117 id=1117 data-nosnippet>1117</a>        roundtrip(<span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x01</span>]); <span class="comment">// 1 * 2^0
-<a href=#1118 id=1118 data-nosnippet>1118</a>        </span>roundtrip(<span class="string">b"\x03123.E-2"</span>);
-<a href=#1119 id=1119 data-nosnippet>1119</a>        roundtrip(<span class="string">b"\x031.E+0"</span>);
-<a href=#1120 id=1120 data-nosnippet>1120</a>    }
-<a href=#1121 id=1121 data-nosnippet>1121</a>
-<a href=#1122 id=1122 data-nosnippet>1122</a>    <span class="attr">#[test]
-<a href=#1123 id=1123 data-nosnippet>1123</a>    </span><span class="kw">fn </span>real_rejects_noncanonical_forms() {
-<a href=#1124 id=1124 data-nosnippet>1124</a>        <span class="kw">for </span>contents <span class="kw">in </span>[
-<a href=#1125 id=1125 data-nosnippet>1125</a>            <span class="kw-2">&amp;</span><span class="string">b"\x031.0E+0"</span>[..],        <span class="comment">// mantissa ends in zero
-<a href=#1126 id=1126 data-nosnippet>1126</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x031.E+1"</span>[..],         <span class="comment">// plus is forbidden for non-zero exponent
-<a href=#1127 id=1127 data-nosnippet>1127</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x02</span>],       <span class="comment">// even mantissa
-<a href=#1128 id=1128 data-nosnippet>1128</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x83</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x01</span>], <span class="comment">// long exponent form used for one octet
-<a href=#1129 id=1129 data-nosnippet>1129</a>        </span>] {
-<a href=#1130 id=1130 data-nosnippet>1130</a>            <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
-<a href=#1131 id=1131 data-nosnippet>1131</a>            input.extend_from_slice(contents);
-<a href=#1132 id=1132 data-nosnippet>1132</a>            <span class="macro">assert!</span>(REAL.parse(&amp;&amp;input[..]).is_err());
-<a href=#1133 id=1133 data-nosnippet>1133</a>        }
-<a href=#1134 id=1134 data-nosnippet>1134</a>    }
-<a href=#1135 id=1135 data-nosnippet>1135</a>
-<a href=#1136 id=1136 data-nosnippet>1136</a>    <span class="attr">#[test]
-<a href=#1137 id=1137 data-nosnippet>1137</a>    </span><span class="kw">fn </span>ber_real_roundtrips_additional_binary_and_decimal_forms() {
-<a href=#1138 id=1138 data-nosnippet>1138</a>        roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x90</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// base 8, unnormalized mantissa
-<a href=#1139 id=1139 data-nosnippet>1139</a>        </span>roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x84</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// binary scale factor 1
-<a href=#1140 id=1140 data-nosnippet>1140</a>        </span>roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x83</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// one-octet long exponent
-<a href=#1141 id=1141 data-nosnippet>1141</a>        </span>roundtrip_ber(<span class="string">b"\x01123"</span>); <span class="comment">// ISO 6093 NR1
-<a href=#1142 id=1142 data-nosnippet>1142</a>        </span>roundtrip_ber(<span class="string">b"\x02-12.5"</span>); <span class="comment">// ISO 6093 NR2
-<a href=#1143 id=1143 data-nosnippet>1143</a>        </span>roundtrip_ber(<span class="string">b"\x03 1.25E+2"</span>); <span class="comment">// ISO 6093 NR3
-<a href=#1144 id=1144 data-nosnippet>1144</a>        </span>roundtrip_ber(<span class="string">b"\x03.125e+3"</span>); <span class="comment">// no digit left of the decimal mark
-<a href=#1145 id=1145 data-nosnippet>1145</a>    </span>}
-<a href=#1146 id=1146 data-nosnippet>1146</a>
-<a href=#1147 id=1147 data-nosnippet>1147</a>    <span class="attr">#[test]
-<a href=#1148 id=1148 data-nosnippet>1148</a>    </span><span class="kw">fn </span>ber_real_rejects_reserved_or_non_real_contents() {
-<a href=#1149 id=1149 data-nosnippet>1149</a>        <span class="kw">for </span>contents <span class="kw">in </span>[
-<a href=#1150 id=1150 data-nosnippet>1150</a>            <span class="kw-2">&amp;</span>[<span class="number">0xb0</span>, <span class="number">0x00</span>, <span class="number">0x01</span>][..], <span class="comment">// reserved binary base
-<a href=#1151 id=1151 data-nosnippet>1151</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x00</span>],     <span class="comment">// zero binary mantissa
-<a href=#1152 id=1152 data-nosnippet>1152</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x010"</span>[..],           <span class="comment">// plus zero must have empty contents
-<a href=#1153 id=1153 data-nosnippet>1153</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x0212"</span>[..],          <span class="comment">// NR2 requires a decimal mark
-<a href=#1154 id=1154 data-nosnippet>1154</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x031.2E2"</span>[..],       <span class="comment">// NR3 exponent sign is mandatory
-<a href=#1155 id=1155 data-nosnippet>1155</a>        </span>] {
-<a href=#1156 id=1156 data-nosnippet>1156</a>            <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
-<a href=#1157 id=1157 data-nosnippet>1157</a>            input.extend_from_slice(contents);
-<a href=#1158 id=1158 data-nosnippet>1158</a>            <span class="macro">assert!</span>(BER_REAL.parse(&amp;&amp;input[..]).is_err());
-<a href=#1159 id=1159 data-nosnippet>1159</a>        }
-<a href=#1160 id=1160 data-nosnippet>1160</a>    }
-<a href=#1161 id=1161 data-nosnippet>1161</a>}
+<a href=#969 id=969 data-nosnippet>969</a>}
+<a href=#970 id=970 data-nosnippet>970</a>
+<a href=#971 id=971 data-nosnippet>971</a><span class="doccomment">/// Borrowed, exact BER/DER REAL contents.
+<a href=#972 id=972 data-nosnippet>972</a></span><span class="kw">pub struct </span>Real&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt; {
+<a href=#973 id=973 data-nosnippet>973</a>    contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
+<a href=#974 id=974 data-nosnippet>974</a>}
+<a href=#975 id=975 data-nosnippet>975</a>
+<a href=#976 id=976 data-nosnippet>976</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; DeepView <span class="kw">for </span>Real&lt;<span class="lifetime">'a</span>, DER&gt; {
+<a href=#977 id=977 data-nosnippet>977</a>    <span class="kw">type </span>V = RealSpec;
+<a href=#978 id=978 data-nosnippet>978</a>
+<a href=#979 id=979 data-nosnippet>979</a>    closed spec <span class="kw">fn </span>deep_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::V {
+<a href=#980 id=980 data-nosnippet>980</a>        <span class="self">self</span>.contents.deep_view()
+<a href=#981 id=981 data-nosnippet>981</a>    }
+<a href=#982 id=982 data-nosnippet>982</a>}
+<a href=#983 id=983 data-nosnippet>983</a>
+<a href=#984 id=984 data-nosnippet>984</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Real&lt;<span class="lifetime">'a</span>, DER&gt; {
+<a href=#985 id=985 data-nosnippet>985</a>    <span class="attr">#[verifier::type_invariant]
+<a href=#986 id=986 data-nosnippet>986</a>    </span>spec <span class="kw">fn </span>wf(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#987 id=987 data-nosnippet>987</a>        real_bytes_wf::&lt;DER&gt;(<span class="self">self</span>.deep_view())
+<a href=#988 id=988 data-nosnippet>988</a>    }
+<a href=#989 id=989 data-nosnippet>989</a>
+<a href=#990 id=990 data-nosnippet>990</a>    <span class="kw">fn </span>new_verified(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="self">Self</span>)
+<a href=#991 id=991 data-nosnippet>991</a>        requires
+<a href=#992 id=992 data-nosnippet>992</a>            real_bytes_wf::&lt;DER&gt;(contents@),
+<a href=#993 id=993 data-nosnippet>993</a>        ensures
+<a href=#994 id=994 data-nosnippet>994</a>            value.deep_view() == contents.deep_view(),
+<a href=#995 id=995 data-nosnippet>995</a>    {
+<a href=#996 id=996 data-nosnippet>996</a>        proof {
+<a href=#997 id=997 data-nosnippet>997</a>            assert(contents.deep_view() == contents@);
+<a href=#998 id=998 data-nosnippet>998</a>        }
+<a href=#999 id=999 data-nosnippet>999</a>        <span class="self">Self </span>{ contents }
+<a href=#1000 id=1000 data-nosnippet>1000</a>    }
+<a href=#1001 id=1001 data-nosnippet>1001</a>
+<a href=#1002 id=1002 data-nosnippet>1002</a>    <span class="doccomment">/// Validates and borrows REAL contents under this format's encoding rules.
+<a href=#1003 id=1003 data-nosnippet>1003</a>    </span><span class="kw">pub fn </span>from_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
+<a href=#1004 id=1004 data-nosnippet>1004</a>        ensures
+<a href=#1005 id=1005 data-nosnippet>1005</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
+<a href=#1006 id=1006 data-nosnippet>1006</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; real_bytes_wf::&lt;DER&gt;(contents@),
+<a href=#1007 id=1007 data-nosnippet>1007</a>    {
+<a href=#1008 id=1008 data-nosnippet>1008</a>        <span class="kw">if </span>real_bytes_wf_exec::&lt;DER&gt;(contents) {
+<a href=#1009 id=1009 data-nosnippet>1009</a>            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new_verified(contents))
+<a href=#1010 id=1010 data-nosnippet>1010</a>        } <span class="kw">else </span>{
+<a href=#1011 id=1011 data-nosnippet>1011</a>            <span class="prelude-val">Err</span>(ParseError::non_canonical())
+<a href=#1012 id=1012 data-nosnippet>1012</a>        }
+<a href=#1013 id=1013 data-nosnippet>1013</a>    }
+<a href=#1014 id=1014 data-nosnippet>1014</a>
+<a href=#1015 id=1015 data-nosnippet>1015</a>    <span class="kw">pub fn </span>contents(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8])
+<a href=#1016 id=1016 data-nosnippet>1016</a>        ensures
+<a href=#1017 id=1017 data-nosnippet>1017</a>            contents.deep_view() == <span class="self">self</span>.deep_view(),
+<a href=#1018 id=1018 data-nosnippet>1018</a>    {
+<a href=#1019 id=1019 data-nosnippet>1019</a>        <span class="self">self</span>.contents
+<a href=#1020 id=1020 data-nosnippet>1020</a>    }
+<a href=#1021 id=1021 data-nosnippet>1021</a>}
+<a href=#1022 id=1022 data-nosnippet>1022</a>
+<a href=#1023 id=1023 data-nosnippet>1023</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Real&lt;<span class="lifetime">'a</span>, <span class="bool-val">true</span>&gt; {
+<a href=#1024 id=1024 data-nosnippet>1024</a>    <span class="doccomment">/// Validates and borrows canonical DER REAL contents.
+<a href=#1025 id=1025 data-nosnippet>1025</a>    </span><span class="kw">pub fn </span>from_der_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
+<a href=#1026 id=1026 data-nosnippet>1026</a>        ensures
+<a href=#1027 id=1027 data-nosnippet>1027</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
+<a href=#1028 id=1028 data-nosnippet>1028</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; der_real_bytes_wf(contents@),
+<a href=#1029 id=1029 data-nosnippet>1029</a>    {
+<a href=#1030 id=1030 data-nosnippet>1030</a>        <span class="self">Self</span>::from_contents(contents)
+<a href=#1031 id=1031 data-nosnippet>1031</a>    }
+<a href=#1032 id=1032 data-nosnippet>1032</a>}
+<a href=#1033 id=1033 data-nosnippet>1033</a>
+<a href=#1034 id=1034 data-nosnippet>1034</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Real&lt;<span class="lifetime">'a</span>, <span class="bool-val">false</span>&gt; {
+<a href=#1035 id=1035 data-nosnippet>1035</a>    <span class="doccomment">/// Validates and borrows any well-formed BER REAL contents.
+<a href=#1036 id=1036 data-nosnippet>1036</a>    </span><span class="kw">pub fn </span>from_ber_contents(contents: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; (value: <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ParseError&gt;)
+<a href=#1037 id=1037 data-nosnippet>1037</a>        ensures
+<a href=#1038 id=1038 data-nosnippet>1038</a>            value matches <span class="prelude-val">Ok</span>(v) ==&gt; v.deep_view() == contents.deep_view(),
+<a href=#1039 id=1039 data-nosnippet>1039</a>            value is <span class="prelude-val">Ok </span>&lt;==&gt; ber_real_bytes_wf(contents@),
+<a href=#1040 id=1040 data-nosnippet>1040</a>    {
+<a href=#1041 id=1041 data-nosnippet>1041</a>        <span class="self">Self</span>::from_contents(contents)
+<a href=#1042 id=1042 data-nosnippet>1042</a>    }
+<a href=#1043 id=1043 data-nosnippet>1043</a>}
+<a href=#1044 id=1044 data-nosnippet>1044</a>
+<a href=#1045 id=1045 data-nosnippet>1045</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#1046 id=1046 data-nosnippet>1046</a>    <span class="kw">type </span>PT = Real&lt;<span class="lifetime">'a</span>, DER&gt;;
+<a href=#1047 id=1047 data-nosnippet>1047</a>
+<a href=#1048 id=1048 data-nosnippet>1048</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: &amp;&amp;<span class="lifetime">'a </span>[u8]) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#1049 id=1049 data-nosnippet>1049</a>        <span class="kw">let </span>(n, contents) = Tail.parse(ibuf)<span class="question-mark">?</span>;
+<a href=#1050 id=1050 data-nosnippet>1050</a>        proof {
+<a href=#1051 id=1051 data-nosnippet>1051</a>            contents.deep_view_eq_view();
+<a href=#1052 id=1052 data-nosnippet>1052</a>        }
+<a href=#1053 id=1053 data-nosnippet>1053</a>        <span class="kw">if </span>real_bytes_wf_exec::&lt;DER&gt;(contents) {
+<a href=#1054 id=1054 data-nosnippet>1054</a>            <span class="kw">let </span>value = Real::new_verified(contents);
+<a href=#1055 id=1055 data-nosnippet>1055</a>            <span class="prelude-val">Ok</span>((n, value))
+<a href=#1056 id=1056 data-nosnippet>1056</a>        } <span class="kw">else </span>{
+<a href=#1057 id=1057 data-nosnippet>1057</a>            <span class="prelude-val">Err</span>(ParseError::non_canonical())
+<a href=#1058 id=1058 data-nosnippet>1058</a>        }
+<a href=#1059 id=1059 data-nosnippet>1059</a>    }
+<a href=#1060 id=1060 data-nosnippet>1060</a>}
+<a href=#1061 id=1061 data-nosnippet>1061</a>
+<a href=#1062 id=1062 data-nosnippet>1062</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, Output: OutputBuf, <span class="kw">const </span>DER: bool&gt; Serializer&lt;Output, Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#1063 id=1063 data-nosnippet>1063</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#1064 id=1064 data-nosnippet>1064</a>        proof {
+<a href=#1065 id=1065 data-nosnippet>1065</a>            use_type_invariant(v);
+<a href=#1066 id=1066 data-nosnippet>1066</a>        }
+<a href=#1067 id=1067 data-nosnippet>1067</a>        Tail.serialize_into(<span class="kw-2">&amp;</span>v.contents, obuf);
+<a href=#1068 id=1068 data-nosnippet>1068</a>    }
+<a href=#1069 id=1069 data-nosnippet>1069</a>}
+<a href=#1070 id=1070 data-nosnippet>1070</a>
+<a href=#1071 id=1071 data-nosnippet>1071</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; Prepare&lt;Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#1072 id=1072 data-nosnippet>1072</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#1073 id=1073 data-nosnippet>1073</a>        proof {
+<a href=#1074 id=1074 data-nosnippet>1074</a>            use_type_invariant(v);
+<a href=#1075 id=1075 data-nosnippet>1075</a>        }
+<a href=#1076 id=1076 data-nosnippet>1076</a>        Tail.prepare(<span class="kw-2">&amp;</span>v.contents)
+<a href=#1077 id=1077 data-nosnippet>1077</a>    }
+<a href=#1078 id=1078 data-nosnippet>1078</a>}
+<a href=#1079 id=1079 data-nosnippet>1079</a>
+<a href=#1080 id=1080 data-nosnippet>1080</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;Real&lt;<span class="lifetime">'a</span>, DER&gt;&gt; <span class="kw">for </span>RealFmt&lt;DER&gt; {
+<a href=#1081 id=1081 data-nosnippet>1081</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>Real&lt;<span class="lifetime">'a</span>, DER&gt;) -&gt; usize {
+<a href=#1082 id=1082 data-nosnippet>1082</a>        Tail.length(<span class="kw-2">&amp;</span>v.contents)
+<a href=#1083 id=1083 data-nosnippet>1083</a>    }
+<a href=#1084 id=1084 data-nosnippet>1084</a>}
+<a href=#1085 id=1085 data-nosnippet>1085</a>
+<a href=#1086 id=1086 data-nosnippet>1086</a>} <span class="comment">// verus!
+<a href=#1087 id=1087 data-nosnippet>1087</a></span><span class="attr">#[cfg(test)]
+<a href=#1088 id=1088 data-nosnippet>1088</a></span><span class="kw">mod </span>tests {
+<a href=#1089 id=1089 data-nosnippet>1089</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#1090 id=1090 data-nosnippet>1090</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::ber::REAL <span class="kw">as </span>BER_REAL;
+<a href=#1091 id=1091 data-nosnippet>1091</a>    <span class="kw">use </span><span class="kw">crate</span>::asn1::der::REAL;
+<a href=#1092 id=1092 data-nosnippet>1092</a>    <span class="kw">use </span><span class="kw">crate</span>::core::exec::{Parser, Prepare, SerializerExt};
+<a href=#1093 id=1093 data-nosnippet>1093</a>
+<a href=#1094 id=1094 data-nosnippet>1094</a>    <span class="kw">fn </span>roundtrip(contents: <span class="kw-2">&amp;</span>[u8]) {
+<a href=#1095 id=1095 data-nosnippet>1095</a>        <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
+<a href=#1096 id=1096 data-nosnippet>1096</a>        input.extend_from_slice(contents);
+<a href=#1097 id=1097 data-nosnippet>1097</a>        <span class="kw">let </span>(<span class="kw">_</span>, value) = REAL.parse(&amp;&amp;input[..]).unwrap();
+<a href=#1098 id=1098 data-nosnippet>1098</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0</span>; REAL.prepare(<span class="kw-2">&amp;</span>value).unwrap()];
+<a href=#1099 id=1099 data-nosnippet>1099</a>        REAL.serialize(<span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>output);
+<a href=#1100 id=1100 data-nosnippet>1100</a>        <span class="macro">assert_eq!</span>(output, input);
+<a href=#1101 id=1101 data-nosnippet>1101</a>    }
+<a href=#1102 id=1102 data-nosnippet>1102</a>
+<a href=#1103 id=1103 data-nosnippet>1103</a>    <span class="kw">fn </span>roundtrip_ber(contents: <span class="kw-2">&amp;</span>[u8]) {
+<a href=#1104 id=1104 data-nosnippet>1104</a>        <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
+<a href=#1105 id=1105 data-nosnippet>1105</a>        input.extend_from_slice(contents);
+<a href=#1106 id=1106 data-nosnippet>1106</a>        <span class="kw">let </span>(<span class="kw">_</span>, value) = BER_REAL.parse(&amp;&amp;input[..]).unwrap();
+<a href=#1107 id=1107 data-nosnippet>1107</a>        <span class="kw">let </span><span class="kw-2">mut </span>output = <span class="macro">vec!</span>[<span class="number">0</span>; BER_REAL.prepare(<span class="kw-2">&amp;</span>value).unwrap()];
+<a href=#1108 id=1108 data-nosnippet>1108</a>        BER_REAL.serialize(<span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>output);
+<a href=#1109 id=1109 data-nosnippet>1109</a>        <span class="macro">assert_eq!</span>(output, input);
+<a href=#1110 id=1110 data-nosnippet>1110</a>    }
+<a href=#1111 id=1111 data-nosnippet>1111</a>
+<a href=#1112 id=1112 data-nosnippet>1112</a>    <span class="attr">#[test]
+<a href=#1113 id=1113 data-nosnippet>1113</a>    </span><span class="kw">fn </span>real_roundtrips_all_der_families() {
+<a href=#1114 id=1114 data-nosnippet>1114</a>        roundtrip(<span class="kw-2">&amp;</span>[]); <span class="comment">// +0
+<a href=#1115 id=1115 data-nosnippet>1115</a>        </span>roundtrip(<span class="kw-2">&amp;</span>[REAL_MINUS_ZERO]);
+<a href=#1116 id=1116 data-nosnippet>1116</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_PLUS_INFINITY]);
+<a href=#1117 id=1117 data-nosnippet>1117</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_MINUS_INFINITY]);
+<a href=#1118 id=1118 data-nosnippet>1118</a>        roundtrip(<span class="kw-2">&amp;</span>[REAL_NOT_A_NUMBER]);
+<a href=#1119 id=1119 data-nosnippet>1119</a>        roundtrip(<span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x01</span>]); <span class="comment">// 1 * 2^0
+<a href=#1120 id=1120 data-nosnippet>1120</a>        </span>roundtrip(<span class="string">b"\x03123.E-2"</span>);
+<a href=#1121 id=1121 data-nosnippet>1121</a>        roundtrip(<span class="string">b"\x031.E+0"</span>);
+<a href=#1122 id=1122 data-nosnippet>1122</a>    }
+<a href=#1123 id=1123 data-nosnippet>1123</a>
+<a href=#1124 id=1124 data-nosnippet>1124</a>    <span class="attr">#[test]
+<a href=#1125 id=1125 data-nosnippet>1125</a>    </span><span class="kw">fn </span>real_rejects_noncanonical_forms() {
+<a href=#1126 id=1126 data-nosnippet>1126</a>        <span class="kw">for </span>contents <span class="kw">in </span>[
+<a href=#1127 id=1127 data-nosnippet>1127</a>            <span class="kw-2">&amp;</span><span class="string">b"\x031.0E+0"</span>[..],        <span class="comment">// mantissa ends in zero
+<a href=#1128 id=1128 data-nosnippet>1128</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x031.E+1"</span>[..],         <span class="comment">// plus is forbidden for non-zero exponent
+<a href=#1129 id=1129 data-nosnippet>1129</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x02</span>],       <span class="comment">// even mantissa
+<a href=#1130 id=1130 data-nosnippet>1130</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x83</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x01</span>], <span class="comment">// long exponent form used for one octet
+<a href=#1131 id=1131 data-nosnippet>1131</a>        </span>] {
+<a href=#1132 id=1132 data-nosnippet>1132</a>            <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
+<a href=#1133 id=1133 data-nosnippet>1133</a>            input.extend_from_slice(contents);
+<a href=#1134 id=1134 data-nosnippet>1134</a>            <span class="macro">assert!</span>(REAL.parse(&amp;&amp;input[..]).is_err());
+<a href=#1135 id=1135 data-nosnippet>1135</a>        }
+<a href=#1136 id=1136 data-nosnippet>1136</a>    }
+<a href=#1137 id=1137 data-nosnippet>1137</a>
+<a href=#1138 id=1138 data-nosnippet>1138</a>    <span class="attr">#[test]
+<a href=#1139 id=1139 data-nosnippet>1139</a>    </span><span class="kw">fn </span>ber_real_roundtrips_additional_binary_and_decimal_forms() {
+<a href=#1140 id=1140 data-nosnippet>1140</a>        roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x90</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// base 8, unnormalized mantissa
+<a href=#1141 id=1141 data-nosnippet>1141</a>        </span>roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x84</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// binary scale factor 1
+<a href=#1142 id=1142 data-nosnippet>1142</a>        </span>roundtrip_ber(<span class="kw-2">&amp;</span>[<span class="number">0x83</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x02</span>]); <span class="comment">// one-octet long exponent
+<a href=#1143 id=1143 data-nosnippet>1143</a>        </span>roundtrip_ber(<span class="string">b"\x01123"</span>); <span class="comment">// ISO 6093 NR1
+<a href=#1144 id=1144 data-nosnippet>1144</a>        </span>roundtrip_ber(<span class="string">b"\x02-12.5"</span>); <span class="comment">// ISO 6093 NR2
+<a href=#1145 id=1145 data-nosnippet>1145</a>        </span>roundtrip_ber(<span class="string">b"\x03 1.25E+2"</span>); <span class="comment">// ISO 6093 NR3
+<a href=#1146 id=1146 data-nosnippet>1146</a>        </span>roundtrip_ber(<span class="string">b"\x03.125e+3"</span>); <span class="comment">// no digit left of the decimal mark
+<a href=#1147 id=1147 data-nosnippet>1147</a>    </span>}
+<a href=#1148 id=1148 data-nosnippet>1148</a>
+<a href=#1149 id=1149 data-nosnippet>1149</a>    <span class="attr">#[test]
+<a href=#1150 id=1150 data-nosnippet>1150</a>    </span><span class="kw">fn </span>ber_real_rejects_reserved_or_non_real_contents() {
+<a href=#1151 id=1151 data-nosnippet>1151</a>        <span class="kw">for </span>contents <span class="kw">in </span>[
+<a href=#1152 id=1152 data-nosnippet>1152</a>            <span class="kw-2">&amp;</span>[<span class="number">0xb0</span>, <span class="number">0x00</span>, <span class="number">0x01</span>][..], <span class="comment">// reserved binary base
+<a href=#1153 id=1153 data-nosnippet>1153</a>            </span><span class="kw-2">&amp;</span>[<span class="number">0x80</span>, <span class="number">0x00</span>, <span class="number">0x00</span>],     <span class="comment">// zero binary mantissa
+<a href=#1154 id=1154 data-nosnippet>1154</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x010"</span>[..],           <span class="comment">// plus zero must have empty contents
+<a href=#1155 id=1155 data-nosnippet>1155</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x0212"</span>[..],          <span class="comment">// NR2 requires a decimal mark
+<a href=#1156 id=1156 data-nosnippet>1156</a>            </span><span class="kw-2">&amp;</span><span class="string">b"\x031.2E2"</span>[..],       <span class="comment">// NR3 exponent sign is mandatory
+<a href=#1157 id=1157 data-nosnippet>1157</a>        </span>] {
+<a href=#1158 id=1158 data-nosnippet>1158</a>            <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">vec!</span>[<span class="number">0x09</span>, contents.len() <span class="kw">as </span>u8];
+<a href=#1159 id=1159 data-nosnippet>1159</a>            input.extend_from_slice(contents);
+<a href=#1160 id=1160 data-nosnippet>1160</a>            <span class="macro">assert!</span>(BER_REAL.parse(&amp;&amp;input[..]).is_err());
+<a href=#1161 id=1161 data-nosnippet>1161</a>        }
+<a href=#1162 id=1162 data-nosnippet>1162</a>    }
+<a href=#1163 id=1163 data-nosnippet>1163</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["bits","bytes","choice","cond","congruence","disjoint","implicit","length","mapped","marker","named","opt","permute","preceded","recursive","reference","refined","sints","star","tail","terminated","tuple","uints"]};
+window.SIDEBAR_ITEMS = {"mod":["bits","bytes","choice","cond","congruence","disjoint","length","mapped","marker","named","opt","permute","preceded","recursive","reference","refined","sints","star","tail","terminated","tuple","uints"]};

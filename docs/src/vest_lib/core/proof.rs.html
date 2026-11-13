@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a>///
 <a href=#142 id=142 data-nosnippet>142</a>/// Parsing a buffer and serializing the result reproduces the consumed bytes.
 <a href=#143 id=143 data-nosnippet>143</a>///
-<a href=#144 id=144 data-nosnippet>144</a>/// Automatically derived for combinators implementing [`SPRoundTrip`] + [`NonMalleable`].
+<a href=#144 id=144 data-nosnippet>144</a>/// Automatically derived from [`SPRoundTrip`], [`NonMalleable`], and [`SoundParser`].
 <a href=#145 id=145 data-nosnippet>145</a>///
 <a href=#146 id=146 data-nosnippet>146</a>/// User-defined combinators can also prove this directly.
 <a href=#147 id=147 data-nosnippet>147</a></span><span class="kw">pub trait </span>PSRoundTrip <span class="kw">where
@@ -321,7 +321,7 @@
 <a href=#321 id=321 data-nosnippet>321</a></span><span class="kw">pub trait </span>StrictCombinator:
 <a href=#322 id=322 data-nosnippet>322</a>    SafeParser +
 <a href=#323 id=323 data-nosnippet>323</a>    Productive +
-<a href=#324 id=324 data-nosnippet>324</a>    SoundParser +
+<a href=#324 id=324 data-nosnippet>324</a>    StrictParser +
 <a href=#325 id=325 data-nosnippet>325</a>    NonMalleable +
 <a href=#326 id=326 data-nosnippet>326</a>    GoodSerializer +
 <a href=#327 id=327 data-nosnippet>327</a>    NonTailFmt +
@@ -334,7 +334,7 @@
 <a href=#334 id=334 data-nosnippet>334</a>    </span>Body:
 <a href=#335 id=335 data-nosnippet>335</a>        SafeParser +
 <a href=#336 id=336 data-nosnippet>336</a>        Productive +
-<a href=#337 id=337 data-nosnippet>337</a>        SoundParser +
+<a href=#337 id=337 data-nosnippet>337</a>        StrictParser +
 <a href=#338 id=338 data-nosnippet>338</a>        NonMalleable +
 <a href=#339 id=339 data-nosnippet>339</a>        GoodSerializer +
 <a href=#340 id=340 data-nosnippet>340</a>        NonTailFmt +
@@ -369,28 +369,30 @@
 <a href=#369 id=369 data-nosnippet>369</a>    ;
 <a href=#370 id=370 data-nosnippet>370</a>}
 <a href=#371 id=371 data-nosnippet>371</a>
-<a href=#372 id=372 data-nosnippet>372</a><span class="doccomment">/// Similar to [`Leaf`], but also includes the parser soundness and non-malleability properties.
-<a href=#373 id=373 data-nosnippet>373</a></span><span class="kw">pub trait </span>LeafNonMalleable:
-<a href=#374 id=374 data-nosnippet>374</a>    Leaf +
-<a href=#375 id=375 data-nosnippet>375</a>    SoundParser +
-<a href=#376 id=376 data-nosnippet>376</a>    NonMalleable {
-<a href=#377 id=377 data-nosnippet>377</a>    proof <span class="kw">fn </span>nonmal_leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>)
-<a href=#378 id=378 data-nosnippet>378</a>        ensures
-<a href=#379 id=379 data-nosnippet>379</a>            <span class="self">self</span>.unambiguous(),
-<a href=#380 id=380 data-nosnippet>380</a>            <span class="self">self</span>.safe_inv(),
-<a href=#381 id=381 data-nosnippet>381</a>            <span class="self">self</span>.sound_inv(),
-<a href=#382 id=382 data-nosnippet>382</a>            <span class="self">self</span>.nonmal_inv(),
-<a href=#383 id=383 data-nosnippet>383</a>            <span class="self">self</span>.serialize_inv(),
-<a href=#384 id=384 data-nosnippet>384</a>            <span class="self">self</span>.serialize_dps_inv(),
-<a href=#385 id=385 data-nosnippet>385</a>            <span class="self">self</span>.equiv_general_inv(),
-<a href=#386 id=386 data-nosnippet>386</a>    ;
-<a href=#387 id=387 data-nosnippet>387</a>}
-<a href=#388 id=388 data-nosnippet>388</a>
-<a href=#389 id=389 data-nosnippet>389</a><span class="kw">impl</span>&lt;Fmt: LeafNonMalleable&gt; Leaf <span class="kw">for </span>Fmt {
-<a href=#390 id=390 data-nosnippet>390</a>    proof <span class="kw">fn </span>leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-<a href=#391 id=391 data-nosnippet>391</a>        <span class="self">self</span>.nonmal_leaf_inv();
-<a href=#392 id=392 data-nosnippet>392</a>    }
-<a href=#393 id=393 data-nosnippet>393</a>}
-<a href=#394 id=394 data-nosnippet>394</a>
-<a href=#395 id=395 data-nosnippet>395</a>} <span class="comment">// verus!
+<a href=#372 id=372 data-nosnippet>372</a><span class="doccomment">/// Similar to [`Leaf`], but also includes parser strictness
+<a href=#373 id=373 data-nosnippet>373</a>/// and non-malleability.
+<a href=#374 id=374 data-nosnippet>374</a></span><span class="kw">pub trait </span>LeafNonMalleable:
+<a href=#375 id=375 data-nosnippet>375</a>    Leaf +
+<a href=#376 id=376 data-nosnippet>376</a>    StrictParser +
+<a href=#377 id=377 data-nosnippet>377</a>    NonMalleable {
+<a href=#378 id=378 data-nosnippet>378</a>    proof <span class="kw">fn </span>nonmal_leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>)
+<a href=#379 id=379 data-nosnippet>379</a>        ensures
+<a href=#380 id=380 data-nosnippet>380</a>            <span class="self">self</span>.unambiguous(),
+<a href=#381 id=381 data-nosnippet>381</a>            <span class="self">self</span>.safe_inv(),
+<a href=#382 id=382 data-nosnippet>382</a>            <span class="self">self</span>.sound_inv(),
+<a href=#383 id=383 data-nosnippet>383</a>            <span class="self">self</span>.strict_inv(),
+<a href=#384 id=384 data-nosnippet>384</a>            <span class="self">self</span>.nonmal_inv(),
+<a href=#385 id=385 data-nosnippet>385</a>            <span class="self">self</span>.serialize_inv(),
+<a href=#386 id=386 data-nosnippet>386</a>            <span class="self">self</span>.serialize_dps_inv(),
+<a href=#387 id=387 data-nosnippet>387</a>            <span class="self">self</span>.equiv_general_inv(),
+<a href=#388 id=388 data-nosnippet>388</a>    ;
+<a href=#389 id=389 data-nosnippet>389</a>}
+<a href=#390 id=390 data-nosnippet>390</a>
+<a href=#391 id=391 data-nosnippet>391</a><span class="kw">impl</span>&lt;Fmt: LeafNonMalleable&gt; Leaf <span class="kw">for </span>Fmt {
+<a href=#392 id=392 data-nosnippet>392</a>    proof <span class="kw">fn </span>leaf_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+<a href=#393 id=393 data-nosnippet>393</a>        <span class="self">self</span>.nonmal_leaf_inv();
+<a href=#394 id=394 data-nosnippet>394</a>    }
+<a href=#395 id=395 data-nosnippet>395</a>}
+<a href=#396 id=396 data-nosnippet>396</a>
+<a href=#397 id=397 data-nosnippet>397</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

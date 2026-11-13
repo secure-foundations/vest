@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0e0bd3c9.js";
+            window.path_to_searchindex_js = "../searchindex-63fac2c1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -312,6 +312,7 @@ parser and serializer specs, as we’ll see in
 impl SafeParser  for MessageFmt { /* .. */ }
 impl Productive  for MessageFmt { /* .. */ }
 impl SoundParser for MessageFmt { /* .. */ }
+impl StrictParser for MessageFmt { /* .. */ }
 impl SPRoundTripDps for MessageFmt { /* .. */ }
 impl NonMalleable for MessageFmt { /* .. */ }
 // ...plus more auxiliary proof traits, depending on the format</code></pre>
@@ -491,8 +492,8 @@ it needs a proof that the length fits in <code>usize</code>.</p>
     assert(output@ == input@[0..consumed]);
     Ok(output)
 }</code></pre>
-<p>Note that no <code>prepare</code> is needed here. <code>parser_lemmas</code> already establish that <code>value</code> is
-consistent with the format and that <code>consumed</code> is its exact length. The equality covers only the consumed prefix.
+<p>Note that no <code>prepare</code> is needed here. <code>parser_lemmas</code> uses <code>SoundParser</code> to establish
+consistency and <code>StrictParser</code> to equate <code>consumed</code> with the serialized length.
 It also inherently requires non-malleability: a malleable format, such as ASN.1 BER, may accept
 several encodings of the same value during parsing and serialize it to a different binary form.</p>
 <p>See the <a href="../../vest_lib/core/proof/index.html">proof traits</a> in <code>vest_lib</code> for more details on the roundtrip and non-malleability theorems.</p>
