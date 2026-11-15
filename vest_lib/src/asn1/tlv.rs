@@ -293,15 +293,19 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1Fmt<Content, DER> wh
     }
 
     fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {
-        broadcast use crate::core::spec::SafeParser::lemma_parse_safe;
-        broadcast use crate::core::spec::SoundParser::lemma_parse_sound_value;
         broadcast use super::tag::lemma_const_tag_fmt_exec_inv;
 
         let _ = ibuf.len();
 
         let (n1, _tag_val) = Const(TagFmt, self.0).parse(ibuf)?;
+        proof {
+            Const(TagFmt, self.0).lemma_parse_safe(ibuf@);
+        }
         let rest = ibuf.skip(n1);
         let (n2, len) = LengthFmt::<DER>.parse(&rest)?;
+        proof {
+            LengthFmt::<DER>.lemma_parse_safe(rest@);
+        }
         let rest = rest.skip(n2);
         let (n3, val) = ExactLen(len, &self.1).parse(&rest)?;
         Ok((n1 + n2 + n3, val))
