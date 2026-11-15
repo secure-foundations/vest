@@ -12,4 +12,10 @@ SizedSetOf DEFINITIONS EXPLICIT TAGS ::= BEGIN
         items   SET SIZE (1) OF Element
     }
 
+    -- Both collection nodes must retain their own tags beneath SIZE wrappers.
+    NestedCollections ::= SEQUENCE {
+        marker [0] IMPLICIT INTEGER OPTIONAL,
+        items SEQUENCE SIZE (1) OF SET SIZE (1) OF INTEGER
+    }
+
 END

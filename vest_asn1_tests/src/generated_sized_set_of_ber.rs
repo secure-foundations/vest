@@ -68,6 +68,29 @@ impl<'a> DeepView for Container<'a> {
     }
 }
 
+/// Value type for ASN.1 `NestedCollections`.
+pub struct NestedCollections<'a> {
+    pub marker: Option<vest_lib::asn1::Integer<'a>>,
+    pub items: Vec<Vec<vest_lib::asn1::Integer<'a>>>,
+}
+
+#[verifier::ext_equal]
+pub struct NestedCollectionsSpec<T0 = Option<int>, T1 = Seq<Seq<int>>> {
+    pub marker: T0,
+    pub items: T1,
+}
+
+impl<'a> DeepView for NestedCollections<'a> {
+    type V = NestedCollectionsSpec;
+    #[verifier::opaque]
+    open spec fn deep_view(&self) -> Self::V {
+        NestedCollectionsSpec {
+            marker: self.marker.deep_view(),
+            items: self.items.deep_view(),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct ElementForward;
 #[derive(Clone, Copy)]
@@ -219,6 +242,87 @@ impl<'a, 'x> Map<&'x Container<'a>> for ContainerReverse {
         proof {
             reveal(<Container as DeepView>::deep_view);
             reveal(ContainerSpec::into_structural);
+        }
+        let result = (value.marker.as_ref(), (&value.items, ()));
+        proof {
+            assert(result.deep_view() == value.deep_view().into_structural());
+        }
+        result
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct NestedCollectionsForward;
+#[derive(Clone, Copy)]
+pub struct NestedCollectionsReverse;
+
+impl<T0, T1> NestedCollectionsSpec<T0, T1> {
+    #[verifier::opaque]
+    pub open spec fn from_structural(input: (T0, (T1, ()))) -> Self {
+        let (marker, (items, _end)) = input;
+        Self {
+            marker,
+            items,
+        }
+    }
+
+    #[verifier::opaque]
+    pub open spec fn into_structural(self) -> (T0, (T1, ())) {
+        (self.marker, (self.items, ()))
+    }
+
+    pub proof fn lemma_from_into(self)
+        ensures Self::from_structural(Self::into_structural(self)) == self,
+    {
+        reveal(NestedCollectionsSpec::from_structural);
+        reveal(NestedCollectionsSpec::into_structural);
+    }
+
+    pub proof fn lemma_into_from(input: (T0, (T1, ())))
+        ensures Self::into_structural(Self::from_structural(input)) == input,
+    {
+        reveal(NestedCollectionsSpec::from_structural);
+        reveal(NestedCollectionsSpec::into_structural);
+    }
+}
+
+impl SpecMap for NestedCollectionsForward {
+    type Input = (Option<int>, (Seq<Seq<int>>, ()));
+    type Output = NestedCollectionsSpec;
+    open spec fn spec_map(&self, input: Self::Input) -> Self::Output {
+        NestedCollectionsSpec::from_structural(input)
+    }
+}
+
+impl SpecMap for NestedCollectionsReverse {
+    type Input = NestedCollectionsSpec;
+    type Output = (Option<int>, (Seq<Seq<int>>, ()));
+    open spec fn spec_map(&self, value: Self::Input) -> Self::Output {
+        value.into_structural()
+    }
+}
+
+impl<'a> Map<(Option<vest_lib::asn1::Integer<'a>>, (Vec<Vec<vest_lib::asn1::Integer<'a>>>, ()))> for NestedCollectionsForward {
+    type O = NestedCollections<'a>;
+    fn map(&self, input: (Option<vest_lib::asn1::Integer<'a>>, (Vec<Vec<vest_lib::asn1::Integer<'a>>>, ()))) -> (value: Self::O) {
+        proof {
+            reveal(<NestedCollections as DeepView>::deep_view);
+            reveal(NestedCollectionsSpec::from_structural);
+        }
+        let (marker, (items, _end)) = input;
+        NestedCollections {
+            marker,
+            items,
+        }
+    }
+}
+
+impl<'a, 'x> Map<&'x NestedCollections<'a>> for NestedCollectionsReverse {
+    type O = (Option<&'x vest_lib::asn1::Integer<'a>>, (&'x Vec<Vec<vest_lib::asn1::Integer<'a>>>, ()));
+    fn map(&self, value: &'x NestedCollections<'a>) -> (output: Self::O) {
+        proof {
+            reveal(<NestedCollections as DeepView>::deep_view);
+            reveal(NestedCollectionsSpec::into_structural);
         }
         let result = (value.marker.as_ref(), (&value.items, ()));
         proof {
@@ -391,6 +495,140 @@ impl CONTAINER {
     }
 }
 
+/// BER format for ASN.1 `NestedCollections`.
+type NESTED_COLLECTIONS__ = Mapped<SequenceFmt<Optional<ImplicitFmt<Ref<IntegerTlvFmt>>, Pair<Ref<Refined<SequenceOfFmt<Refined<SetOfTlvFmt<IntegerTlvFmt>, Size<true, 1, true, 1>>>, Size<true, 1, true, 1>>>, Eof>>>, BiMap<NestedCollectionsForward, NestedCollectionsReverse>>;
+#[derive(Clone, Copy)]
+#[verifier::ext_equal]
+pub struct NESTED_COLLECTIONS(pub Class, pub u64);
+impl NESTED_COLLECTIONS {
+    pub const Fmt: Self = Self(Class::Universal, 16u64);
+
+    #[verifier::allow_in_spec]
+    pub const fn schema() -> NESTED_COLLECTIONS__
+        returns
+            (
+                Mapped {
+                    inner:
+                        SEQUENCE(
+                            OPTIONAL(IMPLICIT(0u64, Ref(INTEGER)),
+                            REQUIRED(Ref(Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>)),
+                            Eof)),
+                        ),
+                    mapper: BiMap(NestedCollectionsForward, NestedCollectionsReverse),
+                }
+            ),
+    {
+        Mapped {
+            inner:
+                SEQUENCE(
+                    OPTIONAL(IMPLICIT(0u64, Ref(INTEGER)),
+                    REQUIRED(Ref(Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>)),
+                    Eof)),
+                ),
+            mapper: BiMap(NestedCollectionsForward, NestedCollectionsReverse),
+        }
+    }
+
+    proof fn lemma_schema_unambiguous(&self)
+        ensures
+            self.spec_inner().unambiguous(),
+            self.spec_inner().asn1_start() == self.asn1_start(),
+            Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64),
+    {
+        reveal(asn1_start_exact_uint);
+        reveal(asn1_starts_disjoint);
+        reveal(NESTED_COLLECTIONS::spec_inner);
+        lemma_asn1_start_exact_uint(self.0, true, self.1);
+        let __asn1_fmt_0 =
+            IMPLICIT(0u64, Ref(INTEGER));
+        assert(__asn1_fmt_0.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 0u64));
+        assert(asn1_start_exact_uint(Class::ContextSpecific, false, 0u64) == asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_1 =
+            (((self.spec_inner()).inner).1).1;
+        let __asn1_fmt_2 =
+            Ref(Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>));
+        let __asn1_fmt_3 =
+            Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>);
+        let __asn1_fmt_4 =
+            SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>));
+        let __asn1_fmt_5 =
+            Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>);
+        let __asn1_fmt_6 =
+            SET_OF(INTEGER);
+        let __asn1_fmt_7 =
+            INTEGER;
+        assert(__asn1_fmt_7.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 2u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 2u64) == asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        let __asn1_fmt_8 = EOC;
+        assert(__asn1_fmt_8.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_start_exact_uint(Class::Universal, false, 0u64) == asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_7.asn1_start(), __asn1_fmt_8.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_7, __asn1_fmt_8);
+        assert(__asn1_fmt_6.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(asn1_start_exact_uint(Class::Universal, true, 17u64) == asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_5.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        let __asn1_fmt_9 = EOC;
+        assert(__asn1_fmt_9.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_5.asn1_start(), __asn1_fmt_9.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_5, __asn1_fmt_9);
+        assert(__asn1_fmt_4.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_start_exact_uint(Class::Universal, true, 16u64) == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+        assert(__asn1_fmt_3.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_2.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_1.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_0.asn1_start(), __asn1_fmt_1.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_0, __asn1_fmt_1);
+        let __asn1_fmt_10 =
+            IMPLICIT(0u64, Ref(INTEGER));
+        assert(__asn1_fmt_10.asn1_start() == asn1_start_exact_uint(Class::ContextSpecific, false, 0u64));
+        let __asn1_fmt_11 =
+            (((self.spec_inner()).inner).eoc_body()).1;
+        let __asn1_fmt_12 =
+            Ref(Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>));
+        let __asn1_fmt_13 =
+            Refined(SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>)), Size::<true, 1, true, 1>);
+        let __asn1_fmt_14 =
+            SEQUENCE_OF(Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>));
+        let __asn1_fmt_15 =
+            Refined(SET_OF(INTEGER), Size::<true, 1, true, 1>);
+        let __asn1_fmt_16 =
+            SET_OF(INTEGER);
+        let __asn1_fmt_17 =
+            INTEGER;
+        assert(__asn1_fmt_17.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 2u64));
+        let __asn1_fmt_18 = EOC;
+        assert(__asn1_fmt_18.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000004u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_17.asn1_start(), __asn1_fmt_18.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_17, __asn1_fmt_18);
+        assert(__asn1_fmt_16.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        assert(__asn1_fmt_15.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 17u64));
+        let __asn1_fmt_19 = EOC;
+        assert(__asn1_fmt_19.asn1_start() == asn1_start_exact_uint(Class::Universal, false, 0u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0002000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0000000000000001u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_15.asn1_start(), __asn1_fmt_19.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_15, __asn1_fmt_19);
+        assert(__asn1_fmt_14.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_13.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_12.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(__asn1_fmt_11.asn1_start() == asn1_start_exact_uint(Class::Universal, true, 16u64));
+        assert(asn1_starts_disjoint(asn1_start_mask(false, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000001u64, 0x0000000000000000u64), asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64))) by (bit_vector);
+        assert(asn1_starts_disjoint(__asn1_fmt_10.asn1_start(), __asn1_fmt_11.asn1_start()));
+        lemma_disjoint_asn1_starts(__asn1_fmt_10, __asn1_fmt_11);
+        assert forall|output: <NestedCollectionsForward as SpecMap>::Output| #[trigger]
+            self.spec_inner().consistent(output) implies self.spec_inner().mapper.sound(output) by {
+            if self.spec_inner().consistent(output) {
+                NestedCollectionsSpec::lemma_from_into(output);
+            }
+        }
+        assert(self.spec_inner().asn1_start() == self.asn1_start());
+        assert(Self::Fmt.asn1_start() == asn1_start_mask(false, 0x0001000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64, 0x0000000000000000u64)) by (bit_vector);
+    }
+}
+
 
 } // verus!
 
@@ -404,4 +642,10 @@ mod __impl_container {
     use super::*;
 
     vest_lib::impl_ber!(tag(constructed), borrowed, CONTAINER, CONTAINER__, ContainerSpec, Container, ContainerForward, ContainerReverse);
+}
+
+mod __impl_nested_collections {
+    use super::*;
+
+    vest_lib::impl_ber!(tag(constructed), borrowed, NESTED_COLLECTIONS, NESTED_COLLECTIONS__, NestedCollectionsSpec, NestedCollections, NestedCollectionsForward, NestedCollectionsReverse);
 }
