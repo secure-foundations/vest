@@ -226,7 +226,7 @@ jobs:
           - name: vest-asn1-tests
             cargo_args: -p vest_asn1_tests
             feature_sets: fixtures cms stress
-            verus_args: --expand-errors --rlimit 100 --num-threads 1
+            verus_args: --expand-errors --rlimit 100 --num-threads 2
           - name: vest-dev
             cargo_args: -p vest_dev
             verus_args: --expand-errors
@@ -320,6 +320,7 @@ jobs:
 
       - name: Verify ASN.1 fixtures
         run: |
+          # Standard macOS runners have only 7 GB RAM; keep their thread cap at one.
           for features in fixtures cms stress; do
             /usr/bin/time -l cargo verus verify -p vest_asn1_tests --no-default-features \
               --features "$features" --locked --check-toolchain \
