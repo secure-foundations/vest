@@ -220,11 +220,13 @@ jobs:
           - name: vest-tests
             cargo_args: -p vest_tests
             verus_args: --expand-errors
-          # This matches vest_asn1_tests/Makefile. The width stress fixture needs
-          # more SMT budget than the Verus default.
+          # Match vest_asn1_tests/Makefile: compile independent groups separately
+          # and bound parallelism to leave memory headroom on standard runners.
+          # The width stress fixture needs more SMT budget than the default.
           - name: vest-asn1-tests
             cargo_args: -p vest_asn1_tests
-            verus_args: --expand-errors --rlimit 100
+            feature_sets: fixtures cms stress
+            verus_args: --expand-errors --rlimit 100 --num-threads 1
           - name: vest-dev
             cargo_args: -p vest_dev
             verus_args: --expand-errors
@@ -262,11 +264,20 @@ jobs:
         env:
           CARGO_ARGS: ${{ matrix.cargo_args }}
           VERUS_ARGS: ${{ matrix.verus_args }}
+          FEATURE_SETS: ${{ matrix.feature_sets }}
         run: |
           # A new target directory guarantees that this job checks the current
           # verification conditions rather than restored Cargo freshness data.
-          cargo verus verify ${CARGO_ARGS} --locked --check-toolchain \
-            --target-dir "$RUNNER_TEMP/verus-target" -- ${VERUS_ARGS}
+          # Each ASN.1 feature set compiles a smaller crate; filtering proof
+          # modules alone would still load all generated schemas into Verus.
+          for features in ${FEATURE_SETS:-default}; do
+            feature_args=()
+            if [[ "$features" != default ]]; then
+              feature_args=(--no-default-features --features "$features")
+            fi
+            /usr/bin/time -v cargo verus verify ${CARGO_ARGS} "${feature_args[@]}" \
+              --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- ${VERUS_ARGS}
+          done
 
   verify-macos:
     name: Verify supported packages on macOS
@@ -308,7 +319,12 @@ jobs:
         run: cargo verus verify -p vest_tests --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors
 
       - name: Verify ASN.1 fixtures
-        run: cargo verus verify -p vest_asn1_tests --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors --rlimit 100
+        run: |
+          for features in fixtures cms stress; do
+            /usr/bin/time -l cargo verus verify -p vest_asn1_tests --no-default-features \
+              --features "$features" --locked --check-toolchain \
+              --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors --rlimit 100 --num-threads 1
+          done
 
       - name: Verify development formats
         run: cargo verus verify -p vest_dev --locked --check-toolchain --target-dir "$RUNNER_TEMP/verus-target" -- --expand-errors

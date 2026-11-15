@@ -47,10 +47,15 @@ test: generate
 # schema_width.asn1 is a deliberate scalability probe: a 16-field BER SEQUENCE
 # cycling OPTIONAL, DEFAULT, and required components.  Its nominal exec proof
 # needs more SMT budget than the Verus default, so this crate raises the ceiling.
-# Everything else here verifies well inside the default limit.  --rlimit is a
-# resource ceiling, not a soundness setting.  Keep this value in step with the
-# `vest-asn1-tests` entry in .github/workflows/ci.yml.
-VERUS_ARGS := --expand-errors --rlimit 100
+# Compile independent groups separately and use one verifier thread to leave
+# memory headroom on CI. Default crate features still include every group.
+# --rlimit is a resource ceiling, not a soundness setting. Keep these settings
+# in step with the ASN.1 verification steps in .github/workflows/ci.yml.
+VERUS_ARGS := --expand-errors --rlimit 100 --num-threads 1
+VERIFY_GROUPS := fixtures cms stress
 
 verify: generate
-	cargo verus verify --locked --check-toolchain -- $(VERUS_ARGS)
+	set -e; for group in $(VERIFY_GROUPS); do \
+		cargo verus verify --no-default-features --features "$$group" \
+			--locked --check-toolchain -- $(VERUS_ARGS); \
+	done

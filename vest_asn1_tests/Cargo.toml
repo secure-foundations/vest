@@ -4,6 +4,14 @@ version = "0.1.0"
 edition.workspace = true
 publish = false
 
+[features]
+# CI verifies these groups separately to bound memory use. Normal builds and
+# runtime tests still include every generated module.
+default = ["fixtures", "cms", "stress"]
+fixtures = []
+cms = []
+stress = []
+
 [dependencies]
 vstd = { workspace = true, features = ["std"] }
 vest_lib = { workspace = true, features = ["std"] }

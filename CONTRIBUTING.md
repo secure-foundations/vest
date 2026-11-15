@@ -112,7 +112,7 @@ cargo verus verify -p vest_lib --no-default-features --features alloc --locked -
 cargo verus verify -p vest_lib --features error-trace --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_tests --locked --check-toolchain -- --expand-errors
 cargo verus verify -p vest_dev --locked --check-toolchain -- --expand-errors
-cargo verus verify -p vest_asn1_tests --locked --check-toolchain -- --expand-errors --rlimit 100
+make -C vest_asn1_tests verify
 ```
 
 For a focused check, use `focus` rather than `verify`:
