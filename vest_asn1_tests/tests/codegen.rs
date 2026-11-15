@@ -35,6 +35,30 @@ fn generated_modules_are_current() {
                 "AttributeCertificateV1",
             ][..],
         ),
+        (
+            include_str!("../sized_set_of.asn1"),
+            include_str!("../src/generated_sized_set_of_der.rs"),
+            EncodingRules::Der,
+            &[][..],
+        ),
+        (
+            include_str!("../sized_sequence_of.asn1"),
+            include_str!("../src/generated_sized_sequence_of_der.rs"),
+            EncodingRules::Der,
+            &[][..],
+        ),
+        (
+            include_str!("../sized_set_of.asn1"),
+            include_str!("../src/generated_sized_set_of_ber.rs"),
+            EncodingRules::Ber,
+            &[][..],
+        ),
+        (
+            include_str!("../sized_sequence_of.asn1"),
+            include_str!("../src/generated_sized_sequence_of_ber.rs"),
+            EncodingRules::Ber,
+            &[][..],
+        ),
     ];
     for (source, expected, encoding_rules, der_definitions) in cases {
         let overrides = der_definitions
