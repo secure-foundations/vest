@@ -1,23 +1,32 @@
 #![allow(dead_code)]
 
+#[cfg(feature = "fixtures")]
 pub mod generated;
+#[cfg(feature = "fixtures")]
 pub mod generated_ber;
+#[cfg(feature = "cms")]
 pub mod generated_cms;
+#[cfg(feature = "fixtures")]
 pub mod generated_mixed;
+#[cfg(feature = "stress")]
 pub mod generated_stress_depth;
+#[cfg(feature = "stress")]
 pub mod generated_stress_width;
 
+#[cfg(feature = "fixtures")]
 use vest_lib::core::exec::parser::{PResult, Parser};
 use vstd::prelude::*;
 
 verus! {
 
+#[cfg(feature = "fixtures")]
 pub fn parse_envelope<'a>(input: &'a [u8]) -> PResult<
     <generated::ENVELOPE as Parser<&'a [u8]>>::PT,
 > {
     generated::ENVELOPE::Fmt.parse(&input)
 }
 
+#[cfg(feature = "fixtures")]
 pub fn parse_selection<'a>(input: &'a [u8]) -> PResult<
     <generated::SELECTION as Parser<&'a [u8]>>::PT,
 > {
@@ -25,6 +34,7 @@ pub fn parse_selection<'a>(input: &'a [u8]) -> PResult<
 }
 
 // Clients can use value soundness without revealing a schema or its mapper.
+#[cfg(feature = "fixtures")]
 proof fn ber_formats_produce_consistent_values(input: Seq<u8>) {
     use vest_lib::core::spec::SoundParser;
 
@@ -33,12 +43,17 @@ proof fn ber_formats_produce_consistent_values(input: Seq<u8>) {
     generated_ber::AUTOMATION_CHOICE::Fmt.lemma_parse_sound_value(input);
     generated_ber::FLAG_SET::Fmt.lemma_parse_sound_value(input);
     generated_mixed::OUTER::Fmt.lemma_parse_sound_value(input);
+}
+
+#[cfg(feature = "cms")]
+proof fn cms_formats_produce_consistent_values(input: Seq<u8>) {
+    use vest_lib::core::spec::SoundParser;
+
     generated_cms::SIGNED_DATA::Fmt.lemma_parse_sound_value(input);
 }
 
 } // verus!
-
-#[cfg(test)]
+#[cfg(all(test, feature = "fixtures"))]
 mod tests {
     use super::generated::*;
     use vest_lib::asn1::{DerOrd, TagFmt};
