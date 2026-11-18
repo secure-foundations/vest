@@ -9,6 +9,7 @@ mod specs;
 mod writer;
 
 use crate::vestir::{self, Definition};
+pub(crate) use common::format_names;
 use common::Analysis;
 use datatypes::ValueTypes;
 use quote::quote;
@@ -320,6 +321,74 @@ impl<'a> Analysis<'a> {
         }
     }
 }
+
+/// Type names the generated module needs unshadowed, regardless of the
+/// names of its formats. Unlike an explicit import, a glob import is only
+/// a conflict when the generator actually uses the imported name.
+pub(crate) fn required_imported_types(has_bitfields: bool) -> impl Iterator<Item = &'static str> {
+    // See `prelude` below. Sum is the qualifier of the L and R imports.
+    ["L", "R", "Sum", "Never", "ComplianceErrorKind", "VarInt"]
+        .into_iter()
+        .chain(has_bitfields.then_some("Bits"))
+}
+
+/// Imported tuple/unit constructors cannot be rebound by a generated pattern.
+/// Record structs and ordinary type-only imports don't have this restriction.
+pub(crate) const IMPORTED_PATTERN_NAMES: &[&str] = &[
+    "Alt",
+    "AndThen",
+    "Array",
+    "BiMap",
+    "Bind",
+    "Choice",
+    "Cond",
+    "Const",
+    "Dispatch",
+    "Empty",
+    "Eof",
+    "ExecNever",
+    "Fixed",
+    "FixWith",
+    "I8",
+    "I16Be",
+    "I16Le",
+    "I32Be",
+    "I32Le",
+    "I64Be",
+    "I64Le",
+    "L",
+    "Named",
+    "Opt",
+    "Optional",
+    "OptionalEnd",
+    "Pair",
+    "Permute2",
+    "Permute3",
+    "Permute4",
+    "Permute5",
+    "PrefixTagged",
+    "R",
+    "Ref",
+    "Refined",
+    "Repeat",
+    "RepeatN",
+    "RepeatTillEnd",
+    "Star",
+    "SuffixTagged",
+    "Tail",
+    "U8",
+    "U16Be",
+    "U16Le",
+    "U24Be",
+    "U24Le",
+    "U32Be",
+    "U32Le",
+    "U64Be",
+    "U64Le",
+    "VarInt",
+    "Varied",
+    "Void",
+];
 
 pub(crate) fn prelude() -> String {
     render_ts(quote! {

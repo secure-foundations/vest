@@ -176,19 +176,12 @@ pub(crate) enum Op {
 }
 
 impl<'a> Analysis<'a> {
-    pub(crate) fn int_is_byte_aligned(&self, int: &IntCombinator) -> bool {
-        match int {
-            IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => bits % 8 == 0,
-            IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
-        }
-    }
-
     pub(crate) fn enum_is_bit_sized(&self, enum_comb: &vestir::EnumCombinator) -> bool {
         let inferred = match enum_comb {
             vestir::EnumCombinator::Exhaustive { inferred, .. }
             | vestir::EnumCombinator::NonExhaustive { inferred, .. } => inferred,
         };
-        !self.int_is_byte_aligned(inferred)
+        !matches!(inferred, IntCombinator::Unsigned(8 | 16 | 24 | 32 | 64))
     }
 
     pub(crate) fn direct_alias<'b>(
@@ -211,9 +204,9 @@ impl<'a> Analysis<'a> {
             Definition::EnumDef { combinator, .. } => {
                 let (enums, inferred) = match combinator {
                     EnumCombinator::Exhaustive { enums, inferred }
-                    | EnumCombinator::NonExhaustive { enums, inferred } => {
-                        (enums.as_slice(), inferred)
-                    }
+                    | EnumCombinator::NonExhaustive {
+                        enums, inferred, ..
+                    } => (enums.as_slice(), inferred),
                 };
                 enums
                     .iter()
@@ -1307,7 +1300,10 @@ impl<'a> Analysis<'a> {
     }
 
     fn inner_needs_lifetime(&self, inner: &Combinator) -> bool {
-        match self.ctx.resolve_alias(inner) {
+        // Invocation metadata is computed in dependency order, with one
+        // result shared across each recursion group. Do not unfold an alias
+        // here: even an alias with a nominal type can be recursive as a codec.
+        match inner {
             Combinator::ConstraintInt(_)
             | Combinator::ConstraintEnum(_)
             | Combinator::Empty

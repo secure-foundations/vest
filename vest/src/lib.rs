@@ -71,11 +71,11 @@ pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>>
         elab::elaborate(&mut ast).map_err(|error| report_frontend_error(error, source))?;
 
     println!("🔍 Type checking...");
-    let ctx = type_check::check(&ast, source)?;
+    let checked = type_check::check(&ast, source)?;
 
     println!("📝 Generating the verus file...");
-    let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
-    let mut ir_ctx: vestir::GlobalCtx = (&ctx).into();
+    let ir = vestir::lowering::lower_checked_definitions(&checked);
+    let mut ir_ctx: vestir::GlobalCtx = (&checked.context).into();
     ir_ctx.lifted_definitions = lifted_definitions;
     let code = codegen::code_gen(&ir, &ir_ctx);
     println!("👏 Done!");

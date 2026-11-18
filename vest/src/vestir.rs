@@ -930,12 +930,14 @@ pub mod lowering {
     use crate::type_check::resolve_enum_type;
     use crate::vestir as ir;
 
-    pub fn lower_checked_definitions<'i>(
-        ast: &'i [ast::Definition<'i>],
-        global_ctx: &'i crate::type_check::GlobalCtx<'i>,
+    pub(crate) fn lower_checked_definitions<'i>(
+        program: &'i crate::type_check::CheckedProgram<'i>,
     ) -> Vec<ir::Definition> {
-        let lowerer = CheckedLowerer { global_ctx };
-        let flat: Vec<ir::Definition> = ast
+        let lowerer = CheckedLowerer {
+            global_ctx: &program.context,
+        };
+        let flat: Vec<ir::Definition> = program
+            .definitions
             .iter()
             .map(|defn| lowerer.lower_definition(defn))
             .collect();
@@ -1395,12 +1397,16 @@ pub mod lowering {
             match e {
                 ast::EnumCombinator::Exhaustive { enums, .. } => ir::EnumCombinator::Exhaustive {
                     enums: enums.iter().map(|e| self.lower_enum(e)).collect(),
-                    inferred: self.lower_int_combinator(&resolve_enum_type(enums)),
+                    inferred: self.lower_int_combinator(
+                        &resolve_enum_type(enums).expect("checked enum carrier"),
+                    ),
                 },
                 ast::EnumCombinator::NonExhaustive { enums, .. } => {
                     ir::EnumCombinator::NonExhaustive {
                         enums: enums.iter().map(|e| self.lower_enum(e)).collect(),
-                        inferred: self.lower_int_combinator(&resolve_enum_type(enums)),
+                        inferred: self.lower_int_combinator(
+                            &resolve_enum_type(enums).expect("checked enum carrier"),
+                        ),
                     }
                 }
             }
@@ -1550,82 +1556,28 @@ pub mod lowering {
             param_defns: &'i [ast::ParamDefn<'i>],
             local_deps: &[(String, ast::Combinator<'i>)],
         ) -> ir::IntCombinator {
-            let combinator = self
-                .resolve_length_dep_combinator(&dep.full_path(), param_defns, local_deps)
-                .unwrap_or_else(|| {
-                    panic!(
-                        "unresolved length dependency `@{}` after type checking",
-                        dep.full_path()
-                    )
-                });
-            match self.global_ctx.resolve(&combinator) {
-                ast::CombinatorInner::ConstraintInt(ast::ConstraintIntCombinator {
-                    combinator,
-                    ..
-                }) => Self::length_carrier_ty(combinator),
-                other => panic!(
-                    "length dependency `@{}` should resolve to an unsigned int, got {:?}",
-                    dep.full_path(),
-                    other
-                ),
+            let root = local_deps
+                .iter()
+                .rev()
+                .find(|(name, _)| name == &dep.root)
+                .map(|(_, combinator)| self.global_ctx.resolve(combinator))
+                .or_else(|| {
+                    param_defns.iter().find_map(|param| {
+                        let ast::ParamDefn::Dependent {
+                            name, combinator, ..
+                        } = param;
+                        (name.name == dep.root).then(|| self.global_ctx.resolve_alias(combinator))
+                    })
+                })
+                .expect("type checking established the length dependency's root")
+                .expect("type checking resolved the length dependency's root");
+            let path: Vec<_> = dep.path.iter().map(String::as_str).collect();
+            match crate::type_check::resolve_path(root.clone(), &path, self.global_ctx)
+                .expect("type checking established the length dependency's path")
+            {
+                ast::CombinatorInner::ConstraintInt(c) => Self::length_carrier_ty(&c.combinator),
+                _ => unreachable!("type checking established an integer length"),
             }
-        }
-
-        fn resolve_length_dep_combinator(
-            &self,
-            name: &str,
-            param_defns: &'i [ast::ParamDefn<'i>],
-            local_deps: &[(String, ast::Combinator<'i>)],
-        ) -> Option<ast::Combinator<'i>> {
-            let parts: Vec<&str> = name.split('.').collect();
-            let root = *parts.first()?;
-            let mut current =
-                if let Some((_, combinator)) = local_deps.iter().rev().find(|(n, _)| n == root) {
-                    combinator.clone()
-                } else {
-                    param_defns.iter().find_map(|param| match param {
-                        ast::ParamDefn::Dependent {
-                            name,
-                            combinator,
-                            span,
-                        } if name.name == root => Some(ast::Combinator {
-                            inner: combinator.clone(),
-                            and_then: None,
-                            span: *span,
-                        }),
-                        _ => None,
-                    })?
-                };
-
-            for field_name in parts.iter().skip(1) {
-                current = match self.global_ctx.resolve(&current) {
-                    ast::CombinatorInner::Struct(struct_comb) => {
-                        struct_comb.fields.iter().find_map(|field| match field {
-                            ast::StructField::Dependent {
-                                label, combinator, ..
-                            }
-                            | ast::StructField::Ordinary {
-                                label, combinator, ..
-                            } if label.name == *field_name => Some(combinator.clone()),
-                            _ => None,
-                        })?
-                    }
-                    ast::CombinatorInner::Bits(bits_comb) => {
-                        bits_comb.fields.iter().find_map(|field| match field {
-                            ast::BitField::Dependent {
-                                label, combinator, ..
-                            }
-                            | ast::BitField::Ordinary {
-                                label, combinator, ..
-                            } if label.name == *field_name => Some(combinator.into()),
-                            _ => None,
-                        })?
-                    }
-                    _ => return None,
-                };
-            }
-
-            Some(current)
         }
 
         fn const_length_ty(&self, value: usize) -> ir::IntCombinator {
@@ -1857,7 +1809,7 @@ pub mod lowering {
             let lowerer = CheckedLowerer { global_ctx: src };
             let combinators: HashSet<ir::CombinatorSig> = src
                 .combinators
-                .iter()
+                .values()
                 .map(|sig| {
                     let name = sig.name.name.clone();
                     let resolved_combinator = match &sig.resolved_combinator {
@@ -1890,7 +1842,7 @@ pub mod lowering {
 
             let const_combinators: HashSet<ir::ConstCombinatorSig> = src
                 .const_combinators
-                .iter()
+                .values()
                 .map(|sig| ir::ConstCombinatorSig {
                     name: sig.name.name.clone(),
                     resolved_combinator: lowerer.lower_const_combinator(&sig.resolved_combinator),

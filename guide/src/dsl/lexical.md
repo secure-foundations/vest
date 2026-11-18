@@ -27,9 +27,11 @@ few more names are unavailable for them:
 - names the generated code uses for its own variables: `ibuf`, `obuf`,
   `old_obuf`, `v`, `rest`, `total_n`, `parse_spec`, `gas`, and `n` or `l`
   followed by digits (`n1`, `l2`, …);
+- names of imported constructors such as `Repeat`;
 - in a `bits` format, also `n`, and the names of the helpers generated for it:
   `pack_<format>`, `unpack_<format>`, `<format>_bounds`, and `<enum>_to_bits`,
-  `<enum>_from_bits`, `<enum>_wf` for any enum.
+  `<enum>_from_bits`, `<enum>_wf` for any enum. A bitfield label also cannot
+  match one of the variants of its own enum type.
 
 The following identifier forms have extra syntax:
 
