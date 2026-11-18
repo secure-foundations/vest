@@ -63,57 +63,40 @@ impl std::error::Error for VestError {}
 pub fn compile(file_name: &str, input: String) -> Result<String, Box<dyn Error>> {
     let source = (file_name, &ariadne::Source::from(input.clone()));
 
-    // parse the vest file
     println!("📜 Parsing the vest file...");
-    match ast::from_str(&input) {
-        Ok(mut ast) => {
-            // elaborate the AST
-            println!("🔨 Elaborating the AST...");
-            let lifted_definitions = elab::elaborate(&mut ast);
+    let mut ast = ast::from_str(&input).map_err(|error| report_frontend_error(error, source))?;
 
-            // type check the AST
-            println!("🔍 Type checking...");
-            match type_check::check(&ast, source) {
-                Ok(ctx) => {
-                    // code gen to a file
-                    // if there is no output file specified, use the same name as the name of input vest file
+    println!("🔨 Elaborating the AST...");
+    let lifted_definitions =
+        elab::elaborate(&mut ast).map_err(|error| report_frontend_error(error, source))?;
 
-                    println!("📝 Generating the verus file...");
-                    let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
-                    let mut ir_ctx: vestir::GlobalCtx = (&ctx).into();
-                    ir_ctx.lifted_definitions = lifted_definitions;
-                    let code = codegen::code_gen(&ir, &ir_ctx);
-                    println!("👏 Done!");
+    println!("🔍 Type checking...");
+    let ctx = type_check::check(&ast, source)?;
 
-                    Ok(code)
-                }
-                Err(e) => {
-                    eprintln!("❌ Type checking failed.");
-                    Err(Box::new(e))
-                }
-            }
-            // let ctx = type_check::check(&ast, source)?;
-        }
-        Err(e) => {
-            let span = match e.location {
-                InputLocation::Pos(pos) => pos..pos,
-                InputLocation::Span(span) => span.0..span.1,
-            };
-            eprintln!("❌ Failed to parse the vest file.");
-            Report::build(ReportKind::Error, (source.0, span.clone()))
-                // .with_message(format!("{e}"))
-                .with_message(format!("{}", e.variant.message()))
-                .with_label(
-                    ariadne::Label::new((source.0, span))
-                        .with_message("here")
-                        .with_color(ariadne::Color::Red),
-                )
-                .finish()
-                .eprint(source)
-                .unwrap();
-            Err(Box::new(VestError::ParsingError))
-        }
-    }
+    println!("📝 Generating the verus file...");
+    let ir = vestir::lowering::lower_checked_definitions(&ast, &ctx);
+    let mut ir_ctx: vestir::GlobalCtx = (&ctx).into();
+    ir_ctx.lifted_definitions = lifted_definitions;
+    let code = codegen::code_gen(&ir, &ir_ctx);
+    println!("👏 Done!");
+    Ok(code)
+}
+
+fn report_frontend_error(
+    error: Box<pest::error::Error<ast::Rule>>,
+    source: (&str, &ariadne::Source),
+) -> VestError {
+    let span = match error.location {
+        InputLocation::Pos(pos) => pos..pos,
+        InputLocation::Span((start, end)) => start..end,
+    };
+    let _ = Report::build(ReportKind::Error, (source.0, span.clone()))
+        .with_config(ariadne::Config::default().with_index_type(ariadne::IndexType::Byte))
+        .with_message(error.variant.message())
+        .with_label(ariadne::Label::new((source.0, span)).with_color(ariadne::Color::Red))
+        .finish()
+        .eprint(source);
+    VestError::ParsingError
 }
 
 /// Compiles the given file and returns the resulting output.

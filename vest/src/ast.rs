@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::fmt::Display;
 use std::hash::Hash;
 
-use pest::error::Error;
+use pest::error::{Error, ErrorVariant};
 use pest::Parser;
 use pest_derive::Parser;
 
@@ -93,6 +93,7 @@ pub enum CombinatorInner<'i> {
     MacroInvocation {
         name: String,
         args: Vec<CombinatorInner<'i>>,
+        span: Span<'i>,
     },
 }
 
@@ -998,7 +999,7 @@ impl Display for CombinatorInner<'_> {
             CombinatorInner::Nothing(n) => write!(f, "{}", n),
             CombinatorInner::Never(n) => write!(f, "{}", n),
             CombinatorInner::Invocation(i) => write!(f, "{}", i),
-            CombinatorInner::MacroInvocation { name, args } => {
+            CombinatorInner::MacroInvocation { name, args, .. } => {
                 write!(f, "{}!({})", name, args.iter().join(","))
             }
         }
@@ -1369,23 +1370,29 @@ impl<'i> CombinatorInner<'i> {
             CombinatorInner::Nothing(n) => n.span,
             CombinatorInner::Never(n) => n.span,
             CombinatorInner::Invocation(i) => i.span,
-            CombinatorInner::MacroInvocation { .. } => Span::new("", 0, 0).unwrap(),
+            CombinatorInner::MacroInvocation { span, .. } => *span,
         }
     }
 }
 
-pub fn from_str(source: &str) -> Result<Vec<Definition<'_>>, Box<Error<Rule>>> {
-    let mut definitions = vec![];
+// Pest establishes the shape of the parse tree, not that its tokens fit
+// the AST's representation. Report failures of that conversion at the token.
+pub(crate) type BuildResult<T> = Result<T, Box<Error<Rule>>>;
 
-    let pairs = VestCombinator::parse(Rule::grammar, source)?;
-    // let pairs = VestCombinator::parse(Rule::grammar, source).unwrap_or_else(|e| panic!("{}", e));
-    for pair in pairs {
-        if let Rule::definition = pair.as_rule() {
-            definitions.push(build_definition(pair));
-        }
-    }
+pub(crate) fn invalid_token(span: Span, message: impl Into<String>) -> Box<Error<Rule>> {
+    Box::new(Error::new_from_span(
+        ErrorVariant::CustomError {
+            message: message.into(),
+        },
+        span,
+    ))
+}
 
-    Ok(definitions)
+pub fn from_str(source: &str) -> BuildResult<Vec<Definition<'_>>> {
+    VestCombinator::parse(Rule::grammar, source)?
+        .filter(|pair| pair.as_rule() == Rule::definition)
+        .map(build_definition)
+        .collect()
 }
 
 fn build_id(pair: pest::iterators::Pair<Rule>) -> Identifier {
@@ -1394,19 +1401,19 @@ fn build_id(pair: pest::iterators::Pair<Rule>) -> Identifier {
     Identifier { name, span }
 }
 
-fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
+fn build_definition(pair: pest::iterators::Pair<Rule>) -> BuildResult<Definition> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::combinator_defn => {
             let mut inner_rules = rule.into_inner();
             let name = build_id(inner_rules.next().unwrap());
             let next_rule = inner_rules.next().unwrap();
             match next_rule.as_rule() {
                 Rule::param_defn_list => {
-                    let param_defns = build_param_defns(next_rule);
-                    let combinator = build_combinator(inner_rules.next().unwrap());
+                    let param_defns = build_param_defns(next_rule)?;
+                    let combinator = build_combinator(inner_rules.next().unwrap())?;
                     Definition::Combinator {
                         name,
                         param_defns,
@@ -1415,7 +1422,7 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
                     }
                 }
                 Rule::combinator => {
-                    let combinator = build_combinator(next_rule);
+                    let combinator = build_combinator(next_rule)?;
                     Definition::Combinator {
                         name,
                         param_defns: vec![],
@@ -1432,7 +1439,7 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
             let next_rule = inner_rules.next().unwrap();
             let name = next_rule.as_str().to_string();
             let name_span = next_rule.as_span();
-            let const_combinator = build_const_combinator(inner_rules.next().unwrap());
+            let const_combinator = build_const_combinator(inner_rules.next().unwrap())?;
             Definition::ConstCombinator {
                 name: Identifier {
                     name,
@@ -1453,13 +1460,16 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
         Rule::macro_defn => {
             let mut inner_rules = rule.into_inner();
             let name = build_id(inner_rules.next().unwrap());
-            let params = inner_rules
-                .next()
-                .unwrap()
-                .into_inner()
-                .map(|r| r.as_str().to_string())
-                .collect();
-            let combinator = build_combinator(inner_rules.next().unwrap());
+            let next = inner_rules.next().unwrap();
+            let (params, body) = if next.as_rule() == Rule::macro_param_list {
+                (
+                    next.into_inner().map(|r| r.as_str().to_string()).collect(),
+                    inner_rules.next().unwrap(),
+                )
+            } else {
+                (vec![], next)
+            };
+            let combinator = build_combinator(body)?;
             Definition::MacroDefn {
                 name,
                 params,
@@ -1467,10 +1477,10 @@ fn build_definition(pair: pest::iterators::Pair<Rule>) -> Definition {
             }
         }
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
+fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> BuildResult<Vec<ParamDefn>> {
     let mut param_defns = vec![];
     for pair in pair.into_inner() {
         let span = pair.as_span();
@@ -1482,7 +1492,7 @@ fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
                     Some(stripped) => name.name = stripped.to_string(),
                     None => unreachable!(),
                 }
-                let combinator = build_combinator_inner(inner_rules.next().unwrap());
+                let combinator = build_combinator_inner(inner_rules.next().unwrap())?;
                 param_defns.push(ParamDefn::Dependent {
                     name,
                     combinator,
@@ -1492,44 +1502,34 @@ fn build_param_defns(pair: pest::iterators::Pair<Rule>) -> Vec<ParamDefn> {
             _ => unreachable!(),
         }
     }
-    param_defns
+    Ok(param_defns)
 }
 
-fn build_combinator(pair: pest::iterators::Pair<Rule>) -> Combinator {
+fn build_combinator(pair: pest::iterators::Pair<Rule>) -> BuildResult<Combinator> {
+    let span = pair.as_span();
     let mut inner_rules = pair.into_inner();
-    let next_rule = inner_rules.next().unwrap();
-    let inner_span = next_rule.as_span();
-    let inner = build_combinator_inner(next_rule);
-    let next_rule = inner_rules.next();
-    let (and_then, and_then_span) = match next_rule {
-        Some(rule) => {
-            let and_then = build_combinator(rule);
-            (Some(Box::new(and_then.clone())), and_then.span)
-        }
-        None => (None, inner_span),
-    };
-    let span = Span::new(
-        inner_span.get_input(),
-        inner_span.start(),
-        and_then_span.end(),
-    )
-    .expect("Failed to create span for combinator: {:inner_span:?}, {and_then_span:?}");
-    Combinator {
+    let inner = build_combinator_inner(inner_rules.next().unwrap())?;
+    let and_then = inner_rules
+        .next()
+        .map(build_combinator)
+        .transpose()?
+        .map(Box::new);
+    Ok(Combinator {
         inner,
         and_then,
         span,
-    }
+    })
 }
 
-fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner {
+fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> BuildResult<CombinatorInner> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::constraint_int_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = build_int_combinator(inner_rules.next().unwrap());
-            let constraint = inner_rules.next().map(build_int_constraint);
+            let combinator = build_int_combinator(inner_rules.next().unwrap())?;
+            let constraint = inner_rules.next().map(build_int_constraint).transpose()?;
             CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                 combinator,
                 constraint,
@@ -1548,23 +1548,31 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         }
         Rule::bits_combinator => {
             let inner_rules = rule.into_inner();
-            let fields = inner_rules.map(build_bit_field).collect();
+            let fields = inner_rules
+                .map(build_bit_field)
+                .collect::<BuildResult<_>>()?;
             CombinatorInner::Bits(BitsCombinator { fields, span })
         }
         Rule::struct_combinator => {
             let inner_rules = rule.into_inner();
-            let fields = inner_rules.map(build_field).collect();
+            let fields = inner_rules.map(build_field).collect::<BuildResult<_>>()?;
             CombinatorInner::Struct(StructCombinator { fields, span })
         }
         Rule::wrap_combinator => {
             let mut inner_rules = rule.into_inner();
             let prior = inner_rules.next().unwrap();
             let prior_span = prior.as_span();
-            let prior = prior.into_inner().map(build_const_combinator).collect();
-            let combinator = Box::new(build_combinator(inner_rules.next().unwrap()));
+            let prior = prior
+                .into_inner()
+                .map(build_const_combinator)
+                .collect::<BuildResult<_>>()?;
+            let combinator = Box::new(build_combinator(inner_rules.next().unwrap())?);
             let post = inner_rules.next().unwrap();
             let post_span = post.as_span();
-            let post = post.into_inner().map(build_const_combinator).collect();
+            let post = post
+                .into_inner()
+                .map(build_const_combinator)
+                .collect::<BuildResult<_>>()?;
             let span = Span::new(prior_span.get_input(), prior_span.start(), post_span.end())
                 .expect("Failed to create span for wrap combinator");
             CombinatorInner::Wrap(WrapCombinator {
@@ -1579,7 +1587,10 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let span = rule.as_span();
             match rule.as_rule() {
                 Rule::exhaustive_enum => {
-                    let enums = rule.into_inner().map(build_enum).collect();
+                    let enums = rule
+                        .into_inner()
+                        .map(build_enum)
+                        .collect::<BuildResult<_>>()?;
                     CombinatorInner::Enum(EnumCombinator::Exhaustive { enums, span })
                 }
                 Rule::non_exhaustive_enum => {
@@ -1587,7 +1598,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                         .into_inner()
                         .filter(|pair| pair.as_rule() == Rule::enum_field)
                         .map(build_enum)
-                        .collect();
+                        .collect::<BuildResult<_>>()?;
                     CombinatorInner::Enum(EnumCombinator::NonExhaustive { enums, span })
                 }
                 _ => unreachable!(),
@@ -1599,7 +1610,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 Rule::depend_id => {
                     let mut depend_id = build_id(inner_rules.next().unwrap());
                     depend_id.name = depend_id.name.strip_prefix('@').unwrap().to_string();
-                    let choices = build_choices(inner_rules);
+                    let choices = build_choices(inner_rules)?;
                     CombinatorInner::Choice(ChoiceCombinator {
                         depend_id: Some(depend_id),
                         choices,
@@ -1607,7 +1618,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                     })
                 }
                 Rule::choice => {
-                    let choices = build_choices(inner_rules);
+                    let choices = build_choices(inner_rules)?;
                     CombinatorInner::Choice(ChoiceCombinator {
                         depend_id: None,
                         choices,
@@ -1617,19 +1628,21 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
                 _ => unreachable!(),
             }
         }
-        Rule::vec_combinator => CombinatorInner::Vec(build_vec_combinator(rule)),
+        Rule::vec_combinator => CombinatorInner::Vec(build_vec_combinator(rule)?),
         Rule::array_combinator => {
             let mut inner_rules = rule.into_inner();
-            let comb = build_combinator(inner_rules.next().unwrap());
+            let comb = build_combinator(inner_rules.next().unwrap())?;
             let len_rule = inner_rules.next().unwrap();
-            let len = build_length_expr(len_rule);
+            let len = build_length_expr(len_rule)?;
             match comb.inner {
                 // [u8; ...] would generate bytes combinator
                 CombinatorInner::ConstraintInt(ConstraintIntCombinator {
                     combinator: IntCombinator::Unsigned(8),
                     constraint,
                     ..
-                }) if constraint.is_none() => CombinatorInner::Bytes(BytesCombinator { len, span }),
+                }) if constraint.is_none() && comb.and_then.is_none() => {
+                    CombinatorInner::Bytes(BytesCombinator { len, span })
+                }
                 _ => {
                     let combinator = Box::new(comb);
                     CombinatorInner::Array(ArrayCombinator {
@@ -1642,7 +1655,7 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
         }
         Rule::option_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = build_combinator(inner_rules.next().unwrap());
+            let combinator = build_combinator(inner_rules.next().unwrap())?;
             CombinatorInner::Option(OptionCombinator(Box::new(combinator)))
         }
         Rule::nothing_combinator => CombinatorInner::Nothing(NothingCombinator { span }),
@@ -1665,35 +1678,44 @@ fn build_combinator_inner(pair: pest::iterators::Pair<Rule>) -> CombinatorInner 
             let name = inner_rules.next().unwrap().as_str().to_string();
             let args = inner_rules
                 .next()
-                .unwrap()
-                .into_inner()
+                .into_iter()
+                .flat_map(|args| args.into_inner())
                 .map(build_combinator_inner)
-                .collect();
-            CombinatorInner::MacroInvocation { name, args }
+                .collect::<BuildResult<_>>()?;
+            CombinatorInner::MacroInvocation { name, args, span }
         }
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_int_combinator(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
+fn parse_width(width: &str, span: Span) -> BuildResult<u8> {
+    width
+        .parse()
+        .map_err(|_| invalid_token(span, "integer width exceeds 255"))
+}
+
+fn build_int_combinator(pair: pest::iterators::Pair<Rule>) -> BuildResult<IntCombinator> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
-    let mut parse_width = || inner_rules.next().unwrap().as_str().parse::<u8>().unwrap();
-    match rule.as_rule() {
-        Rule::unsigned => IntCombinator::Unsigned(parse_width()),
-        Rule::signed => IntCombinator::Signed(parse_width()),
+    let mut width = || {
+        let token = inner_rules.next().unwrap();
+        parse_width(token.as_str(), token.as_span())
+    };
+    Ok(match rule.as_rule() {
+        Rule::unsigned => IntCombinator::Unsigned(width()?),
+        Rule::signed => IntCombinator::Signed(width()?),
         Rule::btc_varint => IntCombinator::BtcVarint,
         Rule::uleb128 => IntCombinator::ULEB128,
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_bit_field(pair: pest::iterators::Pair<Rule>) -> BitField {
+fn build_bit_field(pair: pest::iterators::Pair<Rule>) -> BuildResult<BitField> {
     let span = pair.as_span();
     let mut inner_rules = pair.into_inner();
     let label = build_id(inner_rules.next().unwrap());
-    let combinator = build_bit_field_combinator(inner_rules.next().unwrap());
-    if label.name.starts_with('@') {
+    let combinator = build_bit_field_combinator(inner_rules.next().unwrap())?;
+    Ok(if label.name.starts_with('@') {
         let mut label = label;
         label.name = label.name.strip_prefix('@').unwrap().to_string();
         BitField::Dependent {
@@ -1707,20 +1729,22 @@ fn build_bit_field(pair: pest::iterators::Pair<Rule>) -> BitField {
             combinator,
             span,
         }
-    }
+    })
 }
 
-fn build_bit_field_combinator(pair: pest::iterators::Pair<Rule>) -> BitFieldCombinator {
+fn build_bit_field_combinator(
+    pair: pest::iterators::Pair<Rule>,
+) -> BuildResult<BitFieldCombinator> {
     let mut inner = pair.into_inner();
     let child = inner.next().unwrap();
     let span = child.as_span();
-    match child.as_rule() {
+    Ok(match child.as_rule() {
         Rule::bit_uint_combinator => {
             let mut uint_rules = child.into_inner();
             let _unsigned = uint_rules.next().unwrap(); // "u"
-            let width_str = uint_rules.next().unwrap().as_str();
-            let width = width_str.parse::<u8>().unwrap();
-            let constraint = uint_rules.next().map(build_int_constraint);
+            let token = uint_rules.next().unwrap();
+            let width = parse_width(token.as_str(), token.as_span())?;
+            let constraint = uint_rules.next().map(build_int_constraint).transpose()?;
             BitFieldCombinator::UInt {
                 width,
                 constraint,
@@ -1731,74 +1755,97 @@ fn build_bit_field_combinator(pair: pest::iterators::Pair<Rule>) -> BitFieldComb
             BitFieldCombinator::Invocation(build_combinator_invocation(child))
         }
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_int_constraint(pair: pest::iterators::Pair<Rule>) -> IntConstraint {
+fn build_int_constraint(pair: pest::iterators::Pair<Rule>) -> BuildResult<IntConstraint> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::constraint_elem => IntConstraint::Single {
-            elem: build_constraint_elem(rule),
+            elem: build_constraint_elem(rule)?,
             span,
         },
         Rule::constraint_elem_set => {
             let inner_rules = rule.into_inner();
-            let elems = inner_rules.map(build_constraint_elem).collect::<Vec<_>>();
+            let elems = inner_rules
+                .map(build_constraint_elem)
+                .collect::<BuildResult<_>>()?;
             IntConstraint::Set(elems)
         }
-        Rule::int_constraint => IntConstraint::Neg(Box::new(build_int_constraint(rule))),
+        Rule::int_constraint => IntConstraint::Neg(Box::new(build_int_constraint(rule)?)),
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_constraint_elem(pair: pest::iterators::Pair<Rule>) -> ConstraintElem {
+fn build_constraint_elem(pair: pest::iterators::Pair<Rule>) -> BuildResult<ConstraintElem> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::const_int_range => {
-            let mut inner_rules = rule.into_inner();
-            let start = inner_rules.next().map(build_const_int);
-            let end = inner_rules.next().map(build_const_int);
-            // TODO: check that start <= end (?)
+            let delimiter = span.start() + span.as_str().find("..").unwrap();
+            let mut start = None;
+            let mut end = None;
+            for token in rule.into_inner() {
+                if token.as_span().start() < delimiter {
+                    start = Some(build_const_int(token)?);
+                } else {
+                    end = Some(build_const_int(token)?);
+                }
+            }
+            if start.is_none() && end.is_none() {
+                return Err(invalid_token(span, "a range needs at least one bound"));
+            }
             ConstraintElem::Range { start, end, span }
         }
         Rule::const_int => ConstraintElem::Single {
-            elem: build_const_int(rule),
+            elem: build_const_int(rule)?,
             span,
         },
         _ => unreachable!(),
-    }
+    })
 }
 
-fn build_const_int(pair: pest::iterators::Pair<Rule>) -> i128 {
+fn build_const_int(pair: pest::iterators::Pair<Rule>) -> BuildResult<i128> {
     let mut inner_rules = pair.into_inner();
     let pair = inner_rules.next().unwrap();
     match pair.as_rule() {
-        Rule::decimal => pair.as_str().parse::<i128>().unwrap(),
-        Rule::hex => i128::from_str_radix(&pair.as_str()[2..], 16).unwrap(),
+        Rule::decimal => pair.as_str().parse::<i128>(),
+        Rule::hex => i128::from_str_radix(&pair.as_str()[2..], 16),
         Rule::ascii => {
             // strip leading and trailing quotes
             let str = &pair.as_str();
             let str = &str[1..str.len() - 1];
             if let Some(rem) = str.strip_prefix("\\x") {
-                i128::from_str_radix(rem, 16).unwrap()
+                i128::from_str_radix(rem, 16)
             } else {
-                str.as_bytes()[0] as i128
+                Ok(str.as_bytes()[0] as i128)
             }
         }
         _ => unreachable!(),
     }
+    .map_err(|_| {
+        invalid_token(
+            pair.as_span(),
+            "integer literal exceeds the supported range",
+        )
+    })
 }
 
-fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
+fn build_length_literal(pair: pest::iterators::Pair<Rule>) -> BuildResult<usize> {
     let span = pair.as_span();
-    match pair.as_rule() {
+    usize::try_from(build_const_int(pair)?)
+        .map_err(|_| invalid_token(span, "length does not fit in usize"))
+}
+
+fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> BuildResult<LengthExpr> {
+    let span = pair.as_span();
+    Ok(match pair.as_rule() {
         Rule::length_expr => {
             let mut inner_rules = pair.into_inner();
-            let first_term = build_length_expr(inner_rules.next().unwrap());
+            let first_term = build_length_expr(inner_rules.next().unwrap())?;
 
             let mut result = first_term;
             while let Some(op_rule) = inner_rules.next() {
@@ -1807,7 +1854,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
                     Rule::sub_op => ArithOp::Sub,
                     _ => unreachable!("Expected add_op or sub_op"),
                 };
-                let right_term = build_length_expr(inner_rules.next().unwrap());
+                let right_term = build_length_expr(inner_rules.next().unwrap())?;
                 let new_span = Span::new(
                     result.as_span().get_input(),
                     result.as_span().start(),
@@ -1825,7 +1872,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
         }
         Rule::length_term => {
             let mut inner_rules = pair.into_inner();
-            let first_atom = build_length_expr(inner_rules.next().unwrap());
+            let first_atom = build_length_expr(inner_rules.next().unwrap())?;
 
             let mut result = first_atom;
             while let Some(op_rule) = inner_rules.next() {
@@ -1834,7 +1881,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
                     Rule::div_op => ArithOp::Div,
                     _ => unreachable!("Expected mul_op or div_op"),
                 };
-                let right_atom = build_length_expr(inner_rules.next().unwrap());
+                let right_atom = build_length_expr(inner_rules.next().unwrap())?;
                 let new_span = Span::new(
                     result.as_span().get_input(),
                     result.as_span().start(),
@@ -1852,7 +1899,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
         }
         Rule::length_atom => {
             let inner_rule = pair.into_inner().next().unwrap();
-            build_length_expr(inner_rule)
+            build_length_expr(inner_rule)?
         }
         Rule::size_expr => {
             let mut inner_rules = pair.into_inner();
@@ -1860,10 +1907,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
             LengthExpr::SizeOf { format_name, span }
         }
         Rule::const_int => {
-            let value = build_const_int(pair);
-            let value: usize = value
-                .try_into()
-                .unwrap_or_else(|_| panic!("Array length {} does not fit into usize", value));
+            let value = build_length_literal(pair)?;
             LengthExpr::Const { value, span }
         }
         Rule::depend_id => {
@@ -1871,7 +1915,7 @@ fn build_length_expr(pair: pest::iterators::Pair<Rule>) -> LengthExpr {
             LengthExpr::Dependent(dep_id)
         }
         _ => unreachable!("Unexpected rule in length_expr: {:?}", pair.as_rule()),
-    }
+    })
 }
 
 fn build_dependent_id(pair: pest::iterators::Pair<Rule>) -> DependentId {
@@ -1888,17 +1932,17 @@ fn build_dependent_id(pair: pest::iterators::Pair<Rule>) -> DependentId {
     DependentId { root, path, span }
 }
 
-fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
+fn build_field(pair: pest::iterators::Pair<Rule>) -> BuildResult<StructField> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::constant => {
             let next_rule = inner_rules.next().unwrap();
             let label = build_id(next_rule);
             let next_rule = inner_rules.next().unwrap();
             let combinator_span = next_rule.as_span();
-            let combinator = build_const_combinator(next_rule);
+            let combinator = build_const_combinator(next_rule)?;
             StructField::Const {
                 label,
                 combinator,
@@ -1910,7 +1954,7 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
             let mut label = build_id(rule);
             let next_rule = inner_rules.next().unwrap();
             let combinator_span = next_rule.as_span();
-            let combinator = build_combinator(next_rule);
+            let combinator = build_combinator(next_rule)?;
             let span = Span::new(span.get_input(), span.start(), combinator_span.end())
                 .expect("Failed to create span for struct field");
             if let Some(label_str) = label.name.strip_prefix('@') {
@@ -1929,7 +1973,7 @@ fn build_field(pair: pest::iterators::Pair<Rule>) -> StructField {
             }
         }
         _ => unreachable!(),
-    }
+    })
 }
 
 fn build_params(pair: pest::iterators::Pair<'_, Rule>) -> Vec<Param<'_>> {
@@ -1958,135 +2002,119 @@ fn build_combinator_invocation(pair: pest::iterators::Pair<Rule>) -> CombinatorI
     CombinatorInvocation { func, args, span }
 }
 
-fn build_enum(pair: pest::iterators::Pair<Rule>) -> Enum {
+fn build_enum(pair: pest::iterators::Pair<Rule>) -> BuildResult<Enum> {
     let mut inner_rules = pair.into_inner();
     let next_rule = inner_rules.next().unwrap();
     let name = build_id(next_rule);
     let next_rule = inner_rules.next().unwrap();
     let value_span = next_rule.as_span();
-    let (value, type_annotation) = build_typed_const_int(next_rule);
+    let (value, type_annotation) = build_typed_const_int(next_rule)?;
     // Create a span that covers the entire enum
     let span = Span::new(name.span.get_input(), name.span.start(), value_span.end())
         .expect("Failed to create span for enum");
-    Enum {
+    Ok(Enum {
         name,
         value,
         type_annotation,
         span,
-    }
+    })
 }
 
-fn build_typed_const_int(pair: pest::iterators::Pair<Rule>) -> (i128, Option<IntCombinator>) {
+fn build_typed_const_int(
+    pair: pest::iterators::Pair<Rule>,
+) -> BuildResult<(i128, Option<IntCombinator>)> {
     let mut inner_rules = pair.into_inner();
     let const_int_pair = inner_rules.next().unwrap();
-    let value = build_const_int(const_int_pair);
-    let type_annotation = inner_rules.next().map(build_int_type_suffix);
-    (value, type_annotation)
+    let value = build_const_int(const_int_pair)?;
+    let type_annotation = inner_rules.next().map(build_int_type_suffix).transpose()?;
+    Ok((value, type_annotation))
 }
 
-fn build_int_type_suffix(pair: pest::iterators::Pair<Rule>) -> IntCombinator {
+fn build_int_type_suffix(pair: pest::iterators::Pair<Rule>) -> BuildResult<IntCombinator> {
     let s = pair.as_str();
     let (sign, width_str) = s.split_at(1);
-    let width: u8 = width_str.parse().unwrap();
-    match sign {
+    let width = parse_width(width_str, pair.as_span())?;
+    Ok(match sign {
         "u" => IntCombinator::Unsigned(width),
         "i" => IntCombinator::Signed(width),
         _ => unreachable!(),
+    })
+}
+
+fn build_choices<'i>(rules: pest::iterators::Pairs<'i, Rule>) -> BuildResult<Choices<'i>> {
+    // A wildcard does not determine the family. The checker validates its
+    // position after the AST builder has classified all explicit patterns.
+    let family = rules
+        .clone()
+        .find_map(|branch| {
+            let pattern = branch.into_inner().next().unwrap();
+            (pattern.as_str() != "_").then_some(pattern.as_rule())
+        })
+        .unwrap_or(Rule::variant_id);
+
+    let branches = rules.map(|branch| {
+        let mut parts = branch.into_inner();
+        let pattern = parts.next().unwrap();
+        let body = build_combinator(parts.next().unwrap())?;
+        if pattern.as_str() != "_" && pattern.as_rule() != family {
+            return Err(invalid_token(
+                pattern.as_span(),
+                "choice patterns must all be names, integers, or byte arrays",
+            ));
+        }
+        Ok((pattern, body))
+    });
+
+    match family {
+        Rule::variant_id => branches
+            .map(|branch| branch.map(|(pattern, body)| (build_id(pattern), body)))
+            .collect::<BuildResult<_>>()
+            .map(Choices::Enums),
+        Rule::constraint_elem => branches
+            .map(|branch| {
+                let (pattern, body) = branch?;
+                let pattern = (pattern.as_str() != "_")
+                    .then(|| build_constraint_elem(pattern))
+                    .transpose()?;
+                Ok((pattern, body))
+            })
+            .collect::<BuildResult<_>>()
+            .map(Choices::Ints),
+        Rule::const_array => branches
+            .map(|branch| {
+                let (pattern, body) = branch?;
+                let pattern = if pattern.as_str() == "_" {
+                    ConstArray::Wildcard
+                } else {
+                    build_const_array(pattern)?
+                };
+                Ok((pattern, body))
+            })
+            .collect::<BuildResult<_>>()
+            .map(Choices::Arrays),
+        _ => unreachable!("unexpected choice pattern rule"),
     }
 }
 
-fn build_choices<'i>(inner_rules: pest::iterators::Pairs<'i, Rule>) -> Choices<'i> {
-    // peak the first variant
-    let choice_variant = inner_rules
-        .peek()
-        .unwrap()
-        .into_inner()
-        .peek()
-        .unwrap()
-        .as_rule();
-    match choice_variant {
-        Rule::variant_id => {
-            let parse_enum_choice = |pair: pest::iterators::Pair<'i, Rule>| {
-                let mut inner_rules = pair.into_inner();
-                let name = build_id(inner_rules.next().unwrap());
-                let combinator = build_combinator(inner_rules.next().unwrap());
-                (name, combinator)
-            };
-            let choices = inner_rules.map(parse_enum_choice).collect();
-            Choices::Enums(choices)
-        }
-        Rule::constraint_elem => {
-            let parse_int_choice = |pair: pest::iterators::Pair<'i, Rule>| {
-                let mut inner_rules = pair.into_inner();
-                match inner_rules.peek().unwrap().as_rule() {
-                    Rule::constraint_elem => {
-                        let pattern = build_constraint_elem(inner_rules.next().unwrap());
-                        let combinator = build_combinator(inner_rules.next().unwrap());
-                        (Some(pattern), combinator)
-                    }
-                    Rule::variant_id => {
-                        let name = inner_rules.next().unwrap().as_str();
-                        let combinator = build_combinator(inner_rules.next().unwrap());
-                        if name == "_" {
-                            (None, combinator)
-                        } else {
-                            panic!("Invalid pattern for int choice: {}", name)
-                        }
-                    }
-                    _ => unreachable!(),
-                }
-            };
-            let choices = inner_rules.map(parse_int_choice).collect();
-            Choices::Ints(choices)
-        }
-        Rule::const_array => {
-            let parse_array_choice = |pair: pest::iterators::Pair<'i, Rule>| {
-                let mut inner_rules = pair.into_inner();
-                match inner_rules.peek().unwrap().as_rule() {
-                    Rule::const_array => {
-                        let array = build_const_array(inner_rules.next().unwrap());
-                        let combinator = build_combinator(inner_rules.next().unwrap());
-                        (array, combinator)
-                    }
-                    Rule::variant_id => {
-                        let name = inner_rules.next().unwrap().as_str();
-                        let combinator = build_combinator(inner_rules.next().unwrap());
-                        if name == "_" {
-                            (ConstArray::Wildcard, combinator)
-                        } else {
-                            panic!("Invalid pattern for array choice: {}", name)
-                        }
-                    }
-                    _ => unreachable!(),
-                }
-            };
-            let choices = inner_rules.map(parse_array_choice).collect();
-            Choices::Arrays(choices)
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn build_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> VecCombinator<'_> {
+fn build_vec_combinator(pair: pest::iterators::Pair<'_, Rule>) -> BuildResult<VecCombinator<'_>> {
     let mut inner_rules = pair.into_inner();
     let _ = inner_rules.next().unwrap();
-    let combinator = build_combinator(inner_rules.next().unwrap());
-    VecCombinator::Vec(Box::new(combinator))
+    let combinator = build_combinator(inner_rules.next().unwrap())?;
+    Ok(VecCombinator::Vec(Box::new(combinator)))
 }
 
-fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombinator<'_> {
+fn build_const_combinator(
+    rule: pest::iterators::Pair<'_, Rule>,
+) -> BuildResult<ConstCombinator<'_>> {
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::const_combinator | Rule::inline_const_combinator => {
-            build_const_combinator(rule.into_inner().next().unwrap())
+            build_const_combinator(rule.into_inner().next().unwrap())?
         }
         Rule::const_bytes_combinator => {
             let mut inner_rules = rule.into_inner();
-            let len = build_const_int(inner_rules.next().unwrap());
-            let len: usize = len
-                .try_into()
-                .unwrap_or_else(|_| panic!("length {} does not fit into usize", len));
-            let values = build_const_array(inner_rules.next().unwrap());
+            let len = build_length_literal(inner_rules.next().unwrap())?;
+            let values = build_const_array(inner_rules.next().unwrap())?;
             ConstCombinator::ConstBytes(ConstBytesCombinator { len, values, span })
         }
         Rule::const_enum_combinator => {
@@ -2101,8 +2129,8 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
         }
         Rule::const_int_combinator => {
             let mut inner_rules = rule.into_inner();
-            let combinator = build_int_combinator(inner_rules.next().unwrap());
-            let value = build_const_int(inner_rules.next().unwrap());
+            let combinator = build_int_combinator(inner_rules.next().unwrap())?;
+            let value = build_const_int(inner_rules.next().unwrap())?;
             ConstCombinator::ConstInt(ConstIntCombinator {
                 combinator,
                 value,
@@ -2114,7 +2142,7 @@ fn build_const_combinator(rule: pest::iterators::Pair<'_, Rule>) -> ConstCombina
             span,
         },
         _ => unreachable!(),
-    }
+    })
 }
 
 fn build_enum_constraint(pair: pest::iterators::Pair<'_, Rule>) -> EnumConstraint<'_> {
@@ -2153,11 +2181,11 @@ fn build_enum_constraint(pair: pest::iterators::Pair<'_, Rule>) -> EnumConstrain
     }
 }
 
-fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray<'_> {
+fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> BuildResult<ConstArray<'_>> {
     let mut inner_rules = pair.into_inner();
     let rule = inner_rules.next().unwrap();
     let span = rule.as_span();
-    match rule.as_rule() {
+    Ok(match rule.as_rule() {
         Rule::const_char_array => {
             // strip leading and trailing quotes
             let str = &rule.as_str();
@@ -2172,16 +2200,16 @@ fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray<'_> {
             let next_rule = inner_rules.next().unwrap();
             match next_rule.as_rule() {
                 Rule::int_array_expr => ConstArray::Int {
-                    ints: next_rule.into_inner().map(build_const_int).collect(),
+                    ints: next_rule
+                        .into_inner()
+                        .map(build_const_int)
+                        .collect::<BuildResult<_>>()?,
                     span,
                 },
                 Rule::repeat_int_array_expr => {
                     let mut inner_rules = next_rule.into_inner();
-                    let value = build_const_int(inner_rules.next().unwrap());
-                    let count = build_const_int(inner_rules.next().unwrap());
-                    let count: usize = count
-                        .try_into()
-                        .unwrap_or_else(|_| panic!("length {} does not fit into usize", count));
+                    let value = build_const_int(inner_rules.next().unwrap())?;
+                    let count = build_length_literal(inner_rules.next().unwrap())?;
                     ConstArray::Repeat {
                         repeat: value,
                         count,
@@ -2192,5 +2220,5 @@ fn build_const_array(pair: pest::iterators::Pair<'_, Rule>) -> ConstArray<'_> {
             }
         }
         _ => unreachable!(),
-    }
+    })
 }

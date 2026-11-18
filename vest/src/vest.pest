@@ -127,7 +127,7 @@ param_list            = { "(" ~ param ~ ("," ~ param)* ~ ")" }
 param                 = { depend_id }
 
 /// invoke a `macro` with `macro_param_list`
-macro_invocation = { var_id ~ "!" ~ "(" ~ macro_arg_list ~ ")" }
+macro_invocation = { var_id ~ "!" ~ "(" ~ macro_arg_list? ~ ")" }
 macro_arg_list   = { combinator_inner ~ ("," ~ combinator_inner)* }
 
 const_combinator       =  { inline_const_combinator | const_id }
