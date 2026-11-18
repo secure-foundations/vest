@@ -1632,6 +1632,7 @@ fn space_between(prev2: Option<&Tree>, prev: &Tree, next: &Tree) -> bool {
             false
         }
         // Paths, members, and ranges.
+        (p, n) if p.is_punct(":") && n.is_punct("::") => true,
         (_, n) if n.is_punct("::") || n.is_punct(".") || n.is_punct("..") || n.is_punct("..=") => {
             false
         }
@@ -1757,6 +1758,10 @@ mod tests {
             "fn parse(&self, ibuf: &&'i [u8]) -> PResult<Self::PT> {\n    let (n, v) = (Named(\"x\", XFmt)).parse(&rest)?;\n    Ok((n, v))\n}\n"
         );
         assert_eq!(fmt("let x = a >> 4 ;"), "let x = a >> 4;\n");
+        assert_eq!(
+            fmt("fn f(x: ::vest_lib::prelude::Eof) {}"),
+            "fn f(x: ::vest_lib::prelude::Eof) {}\n"
+        );
         assert_eq!(
             fmt("assert (obuf @ == old_obuf + self . spec (v . deep_view ())) ;"),
             "assert(obuf@ == old_obuf + self.spec(v.deep_view()));\n"

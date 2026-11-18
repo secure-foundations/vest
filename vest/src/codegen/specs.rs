@@ -509,7 +509,7 @@ impl<'a> Analysis<'a> {
                 let len_expr = self.render_length_expr_with(
                     &bytes.len,
                     &|name| path_tokens(name),
-                    Some(&len_ty),
+                    TypeMode::Spec,
                 );
                 let inner = self.render_spec_combinator(rhs);
                 let inner_ty = &inner.ty;
@@ -637,7 +637,7 @@ impl<'a> Analysis<'a> {
                         let len = self.render_length_expr_with(
                             &array_comb.len,
                             &|name| path_tokens(name),
-                            Some(&len_ty),
+                            TypeMode::Spec,
                         );
                         RenderedSpec::new(
                             quote! { RepeatN<#inner_ty, #len_ty> },
@@ -665,7 +665,7 @@ impl<'a> Analysis<'a> {
                         let len = self.render_length_expr_with(
                             &bytes.len,
                             &|name| path_tokens(name),
-                            Some(&len_ty),
+                            TypeMode::Spec,
                         );
                         RenderedSpec::new(
                             quote! { Varied<#len_ty> },
@@ -1176,23 +1176,30 @@ impl<'a> Analysis<'a> {
             })
             .collect::<Vec<_>>();
 
+        let component = |tuple, idx| {
+            if fields.len() == 1 {
+                tuple
+            } else {
+                tuple_index_expr(tuple, idx)
+            }
+        };
         let unpack_components = (0..fields.len())
             .map(|idx| {
                 let tuple = quote! { #unpack_ident(raw) };
-                tuple_index_expr(tuple, idx)
+                component(tuple, idx)
             })
             .collect::<Vec<_>>();
         let unpack_i_components = (0..fields.len())
             .map(|idx| {
                 let tuple = quote! { #unpack_ident(i) };
-                tuple_index_expr(tuple, idx)
+                component(tuple, idx)
             })
             .collect::<Vec<_>>();
         let pack_unpack_ensures = label_idents
             .iter()
             .enumerate()
             .map(|(idx, ident)| {
-                let unpacked_idx = tuple_index_expr(
+                let unpacked_idx = component(
                     quote! { #unpack_ident(#pack_ident(#(#label_idents),*)) },
                     idx,
                 );
@@ -1547,9 +1554,9 @@ impl<'a> Analysis<'a> {
         let reverse_ident = format_ident!("{}Reverse", info.names.exec);
         let (variants, exhaustive, inferred) = match enum_comb {
             EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
-            EnumCombinator::NonExhaustive { enums, inferred } => {
-                (enums.as_slice(), false, inferred)
-            }
+            EnumCombinator::NonExhaustive {
+                enums, inferred, ..
+            } => (enums.as_slice(), false, inferred),
         };
         let prim_ty = self.render_int_combinator_ty(inferred);
         let prim_expr = self.render_int_combinator_expr(inferred);
@@ -1789,6 +1796,14 @@ impl<'a> Analysis<'a> {
                 pub struct #fmt_ident;
             })
         } else {
+            let derives = if param_defns.iter().all(|param| {
+                let ParamDefn::Dependent { combinator, .. } = param;
+                self.combinator_is_copyable(combinator)
+            }) {
+                quote! { #[derive(Clone, Copy)] }
+            } else {
+                quote! { #[derive(Clone)] }
+            };
             let invariant = if invariant_terms.is_empty() {
                 quote! { true }
             } else {
@@ -1822,7 +1837,7 @@ impl<'a> Analysis<'a> {
             };
             render_ts(quote! {
                 #[doc = #doc]
-                #[derive(Clone, Copy)]
+                #derives
                 pub struct #fmt_ident #lifetime {
                     #(#fields,)*
                 }

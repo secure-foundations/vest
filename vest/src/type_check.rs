@@ -2757,7 +2757,37 @@ fn check_enum_combinator(en: &EnumCombinator, source: (&str, &Source)) -> Result
         }
         check_const_int_combinator(&combinator, value, span, source)?;
     }
+    if open && unknown_enum_discriminant(enums, &combinator).is_err() {
+        return Err(report_error(
+            source,
+            span,
+            "open enum has no spare Rust discriminant for `Unknown`; remove `...` to make it a closed enum",
+        ));
+    }
     Ok(())
+}
+
+/// Keep Rust's implicit discriminant when it is available. Otherwise choose a
+/// spare one in the Rust carrier, which may be wider than the wire integer.
+/// The discriminant has no effect on the wire codes accepted by `Unknown`.
+pub(crate) fn unknown_enum_discriminant(
+    enums: &[Enum],
+    carrier: &IntCombinator,
+) -> Result<Option<i128>, ()> {
+    let max = (1i128 << carrier.carrier_width()) - 1;
+    let implicit = enums.last().expect("nonempty enum").value + 1;
+    if implicit <= max && !enums.iter().any(|variant| variant.value == implicit) {
+        return Ok(None);
+    }
+    let used = enums
+        .iter()
+        .map(|variant| variant.value)
+        .collect::<HashSet<_>>();
+    // At most used.len() occupied candidates are examined, even for u64.
+    (0..=max)
+        .find(|candidate| !used.contains(candidate))
+        .map(Some)
+        .ok_or(())
 }
 
 /// Resolve the underlying integer type for an enum.

@@ -298,6 +298,8 @@ pub enum EnumCombinator {
     NonExhaustive {
         enums: Vec<Enum>,
         inferred: IntCombinator,
+        /// Explicit Rust discriminant for the payload variant, if needed.
+        unknown_discriminant: Option<i128>,
     },
 }
 
@@ -927,7 +929,7 @@ impl GlobalCtx {
 
 pub mod lowering {
     use crate::ast;
-    use crate::type_check::resolve_enum_type;
+    use crate::type_check::{resolve_enum_type, unknown_enum_discriminant};
     use crate::vestir as ir;
 
     pub(crate) fn lower_checked_definitions<'i>(
@@ -1402,11 +1404,12 @@ pub mod lowering {
                     ),
                 },
                 ast::EnumCombinator::NonExhaustive { enums, .. } => {
+                    let carrier = resolve_enum_type(enums).expect("checked enum carrier");
                     ir::EnumCombinator::NonExhaustive {
                         enums: enums.iter().map(|e| self.lower_enum(e)).collect(),
-                        inferred: self.lower_int_combinator(
-                            &resolve_enum_type(enums).expect("checked enum carrier"),
-                        ),
+                        inferred: self.lower_int_combinator(&carrier),
+                        unknown_discriminant: unknown_enum_discriminant(enums, &carrier)
+                            .expect("checked open enum discriminant"),
                     }
                 }
             }

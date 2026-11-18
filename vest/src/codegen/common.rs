@@ -943,42 +943,49 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    /// Render a typed IR length in either mode. The operand promotions
+    /// are identical; only spec arithmetic needs a cast back from math integers.
     pub(crate) fn render_length_expr_with<F>(
         &self,
         len: &LengthExpr,
         render_dep: &F,
-        cast_ty: Option<&TokenStream>,
+        mode: TypeMode,
     ) -> TokenStream
     where
         F: Fn(&str) -> TokenStream,
     {
         match &len.kind {
-            vestir::LengthExprKind::Const(n) => {
-                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                quote! { #lit }
-            }
+            vestir::LengthExprKind::Const(n) => syn_usize(*n),
             vestir::LengthExprKind::Dependent(name) => render_dep(name),
             vestir::LengthExprKind::SizeOf(name) => {
-                if let Some(n) = self.ctx.static_sizes.get(name) {
-                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                    quote! { #lit }
-                } else {
-                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
-                    quote! { <#fmt_ident as StaticByteLen>::static_byte_len() }
-                }
+                let n = self.ctx.static_sizes[name];
+                syn_usize(n)
             }
             vestir::LengthExprKind::BinOp { op, left, right } => {
-                let left = self.render_length_expr_with(left, render_dep, cast_ty);
-                let right = self.render_length_expr_with(right, render_dep, cast_ty);
+                let ty = self.render_int_type(&len.ty);
+                let operand = |child: &LengthExpr| {
+                    let expr = self.render_length_expr_with(child, render_dep, mode);
+                    if child.ty == len.ty
+                        || matches!(
+                            child.kind,
+                            vestir::LengthExprKind::Const(_) | vestir::LengthExprKind::SizeOf(_)
+                        )
+                    {
+                        expr
+                    } else {
+                        quote! { (#expr as #ty) }
+                    }
+                };
+                let (left, right) = (operand(left), operand(right));
                 let expr = match op {
                     vestir::ArithOp::Add => quote! { (#left + #right) },
                     vestir::ArithOp::Sub => quote! { (#left - #right) },
                     vestir::ArithOp::Mul => quote! { (#left * #right) },
                     vestir::ArithOp::Div => quote! { (#left / #right) },
                 };
-                match cast_ty {
-                    Some(ty) => quote! { (#expr as #ty) },
-                    None => expr,
+                match mode {
+                    TypeMode::Spec => quote! { (#expr as #ty) },
+                    TypeMode::Exec => expr,
                 }
             }
         }
