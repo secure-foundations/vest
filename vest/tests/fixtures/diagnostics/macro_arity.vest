@@ -1,0 +1,2 @@
+macro octet!() = u8
+fmt = octet!(u8)

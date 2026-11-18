@@ -1,0 +1,41 @@
+// Supported forms adjacent to the bugs reported in #58–60.
+
+macro octet!() = u8
+macro reparse!(item) = [u8; 1] >>= item
+macro_value = reparse!(octet!())
+
+byte_bits = bits {
+    byte: u8,
+}
+
+flags = enum {
+    flag = 0u4,
+    extra = 1u4,
+}
+
+enum_field = bits {
+    kind: flags,
+    padding: u4,
+}
+
+last_byte = enum {
+    Last = 255,
+    ...
+}
+
+// Rust's implicit discriminant would be 2, already used by High.
+out_of_order = enum {
+    High = 2,
+    Low = 1,
+    ...
+}
+
+nibble = u8 | { 0xf }
+field_names = {
+    Payload: nibble,
+}
+
+mixed(@count: u16 | { 1..255 }, @width: u8 | { 1..2 }) = [u8; @count + @width]
+
+uses_anonymous(@param: bits { byte: u8, }) = u8
+uses_owned(@param: Vec<u8>) = u8

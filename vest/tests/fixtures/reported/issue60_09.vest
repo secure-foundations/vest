@@ -1,0 +1,1 @@
+k(@width:u16,@height:u16,@bpp:u8)={a:[u8;(@width*@height*@bpp)/8],}

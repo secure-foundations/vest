@@ -1,0 +1,9 @@
+kind = enum { Known = 0, ... }
+header = bits { kind: kind, }
+fmt = {
+    @head: header,
+    value: choose(@head.kind) {
+        Known => u8,
+        _ => [u8; @head.missing],
+    },
+}
