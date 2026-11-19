@@ -1,0 +1,1 @@
+content_type=enum{C0=0,C1=1,C2=2,...}_c = { @f2 : content_type , @f3 : u24 , f4 : [ u8 ; @f3 ] >>= choose ( @f2 ) { C0  content_0 ( @f3 ) , C1  u16 , C2 u32 , _  uleb128 , } , } content_0 ( @num : u24 ) = [ u8 ; @num ]

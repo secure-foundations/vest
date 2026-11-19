@@ -1,0 +1,1 @@
+s(@f:Vec<Tail>>=(Tail)>>=Tail>)=(wrap(Tail))

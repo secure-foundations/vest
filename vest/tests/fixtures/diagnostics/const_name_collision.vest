@@ -1,0 +1,2 @@
+foo = u8
+const foo: u8 = 0

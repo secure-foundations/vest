@@ -740,9 +740,13 @@ impl<'a> Analysis<'a> {
         let exec_ident = format_ident!("{}", names.exec);
         let spec_ident = format_ident!("{}", names.spec);
         let inner_ident = format_ident!("{}", names.inner);
-        let (variants, exhaustive, inferred) = match enum_comb {
-            EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred),
-            EnumCombinator::NonExhaustive { enums, inferred } => (enums, false, inferred),
+        let (variants, exhaustive, inferred, unknown_discriminant) = match enum_comb {
+            EnumCombinator::Exhaustive { enums, inferred } => (enums, true, inferred, None),
+            EnumCombinator::NonExhaustive {
+                enums,
+                inferred,
+                unknown_discriminant,
+            } => (enums, false, inferred, *unknown_discriminant),
         };
         let repr_ty = self.render_int_type(inferred);
         let int_spec_ty = self.render_int_type(inferred);
@@ -758,6 +762,9 @@ impl<'a> Analysis<'a> {
         });
         let extra_exec = if exhaustive {
             quote! {}
+        } else if let Some(discriminant) = unknown_discriminant {
+            let value = int_literal(discriminant, inferred);
+            quote! { Unknown(#repr_ty) = #value, }
         } else {
             quote! { Unknown(#repr_ty), }
         };

@@ -1606,11 +1606,12 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::Parse,
             &[quote! { ibuf@ }],
         );
+        let implies: TokenStream = "==>".parse().unwrap();
         let header = render_ts(quote! {
             fn parse_gas<'i>(&self, gas: usize, ibuf: &&'i [u8]) -> (r: PResult<#exec_ty>)
                 ensures
                     parse_matches_spec(r, #spec_match),
-                    r matches Ok((n, _)) ==> n <= ibuf@.len(),
+                    r matches Ok((n, _)) #implies n <= ibuf@.len(),
                 decreases gas,
         });
         out.block(header, |w| {
@@ -1691,10 +1692,11 @@ impl<'a> Analysis<'a> {
             RecSpecHelperKind::ByteLen,
             &[quote! { v.deep_view() }],
         );
+        let implies: TokenStream = "==>".parse().unwrap();
         let header = render_ts(quote! {
             fn prepare_gas<'i>(&self, gas: usize, v: &#exec_ty) -> (checked: Result<usize, PreSerializeError>)
                 ensures
-                    checked matches Ok(len) ==> {
+                    checked matches Ok(len) #implies {
                         &&& #consistent
                         &&& len == #byte_len
                     },

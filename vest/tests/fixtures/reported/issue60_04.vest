@@ -1,0 +1,2 @@
+bits=Never("")//
+atsss_st=enum{A=0u4,A1=1,A2=2u4,A3=3u4,A4=4u4,A5=5u4,A6=6u4,A7=7u4,}t=bits{c:u1,t:atsss_st,s:u1,u:u1,o:u1,}

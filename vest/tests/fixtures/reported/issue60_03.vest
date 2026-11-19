@@ -1,0 +1,1 @@
+bits=bits{o:u4|4,l:u4|5,d:u6,c:u2,}s(@ihl:u8) = [ u8 ; ( @ihl - 5 ) * 4 ]

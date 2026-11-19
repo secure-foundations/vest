@@ -176,19 +176,12 @@ pub(crate) enum Op {
 }
 
 impl<'a> Analysis<'a> {
-    pub(crate) fn int_is_byte_aligned(&self, int: &IntCombinator) -> bool {
-        match int {
-            IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => bits % 8 == 0,
-            IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
-        }
-    }
-
     pub(crate) fn enum_is_bit_sized(&self, enum_comb: &vestir::EnumCombinator) -> bool {
         let inferred = match enum_comb {
             vestir::EnumCombinator::Exhaustive { inferred, .. }
             | vestir::EnumCombinator::NonExhaustive { inferred, .. } => inferred,
         };
-        !self.int_is_byte_aligned(inferred)
+        !matches!(inferred, IntCombinator::Unsigned(8 | 16 | 24 | 32 | 64))
     }
 
     pub(crate) fn direct_alias<'b>(
@@ -211,9 +204,9 @@ impl<'a> Analysis<'a> {
             Definition::EnumDef { combinator, .. } => {
                 let (enums, inferred) = match combinator {
                     EnumCombinator::Exhaustive { enums, inferred }
-                    | EnumCombinator::NonExhaustive { enums, inferred } => {
-                        (enums.as_slice(), inferred)
-                    }
+                    | EnumCombinator::NonExhaustive {
+                        enums, inferred, ..
+                    } => (enums.as_slice(), inferred),
                 };
                 enums
                     .iter()
@@ -950,42 +943,49 @@ impl<'a> Analysis<'a> {
         }
     }
 
+    /// Render a typed IR length in either mode. The operand promotions
+    /// are identical; only spec arithmetic needs a cast back from math integers.
     pub(crate) fn render_length_expr_with<F>(
         &self,
         len: &LengthExpr,
         render_dep: &F,
-        cast_ty: Option<&TokenStream>,
+        mode: TypeMode,
     ) -> TokenStream
     where
         F: Fn(&str) -> TokenStream,
     {
         match &len.kind {
-            vestir::LengthExprKind::Const(n) => {
-                let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                quote! { #lit }
-            }
+            vestir::LengthExprKind::Const(n) => syn_usize(*n),
             vestir::LengthExprKind::Dependent(name) => render_dep(name),
             vestir::LengthExprKind::SizeOf(name) => {
-                if let Some(n) = self.ctx.static_sizes.get(name) {
-                    let lit = proc_macro2::Literal::usize_unsuffixed(*n);
-                    quote! { #lit }
-                } else {
-                    let fmt_ident = format_ident!("{}Spec", self.info(name).names.fmt);
-                    quote! { <#fmt_ident as StaticByteLen>::static_byte_len() }
-                }
+                let n = self.ctx.static_sizes[name];
+                syn_usize(n)
             }
             vestir::LengthExprKind::BinOp { op, left, right } => {
-                let left = self.render_length_expr_with(left, render_dep, cast_ty);
-                let right = self.render_length_expr_with(right, render_dep, cast_ty);
+                let ty = self.render_int_type(&len.ty);
+                let operand = |child: &LengthExpr| {
+                    let expr = self.render_length_expr_with(child, render_dep, mode);
+                    if child.ty == len.ty
+                        || matches!(
+                            child.kind,
+                            vestir::LengthExprKind::Const(_) | vestir::LengthExprKind::SizeOf(_)
+                        )
+                    {
+                        expr
+                    } else {
+                        quote! { (#expr as #ty) }
+                    }
+                };
+                let (left, right) = (operand(left), operand(right));
                 let expr = match op {
                     vestir::ArithOp::Add => quote! { (#left + #right) },
                     vestir::ArithOp::Sub => quote! { (#left - #right) },
                     vestir::ArithOp::Mul => quote! { (#left * #right) },
                     vestir::ArithOp::Div => quote! { (#left / #right) },
                 };
-                match cast_ty {
-                    Some(ty) => quote! { (#expr as #ty) },
-                    None => expr,
+                match mode {
+                    TypeMode::Spec => quote! { (#expr as #ty) },
+                    TypeMode::Exec => expr,
                 }
             }
         }
@@ -1307,7 +1307,10 @@ impl<'a> Analysis<'a> {
     }
 
     fn inner_needs_lifetime(&self, inner: &Combinator) -> bool {
-        match self.ctx.resolve_alias(inner) {
+        // Invocation metadata is computed in dependency order, with one
+        // result shared across each recursion group. Do not unfold an alias
+        // here: even an alias with a nominal type can be recursive as a codec.
+        match inner {
             Combinator::ConstraintInt(_)
             | Combinator::ConstraintEnum(_)
             | Combinator::Empty

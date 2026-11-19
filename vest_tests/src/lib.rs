@@ -8,6 +8,7 @@ pub mod bits_little;
 pub mod client_ergonomics;
 mod client_ergonomics_checks;
 pub mod codegen;
+pub mod compiler_regressions;
 pub mod elab;
 pub mod enum_constraints;
 pub mod enums;
@@ -28,6 +29,36 @@ pub mod stress_dynamic_depth;
 pub mod stress_width;
 pub mod tls;
 pub mod tlv;
+
+#[cfg(test)]
+mod compiler_runtime_regressions {
+    use super::compiler_regressions::{
+        FieldNames, FieldNamesFmt, LastByte, LastByteFmt, MacroValueFmt, OutOfOrder, OutOfOrderFmt,
+    };
+    use vest_lib::prelude::*;
+
+    #[test]
+    fn field_names_macros_and_open_enum_boundaries() {
+        let (n, value) = FieldNamesFmt.parse(&&[15][..]).unwrap();
+        assert_eq!(n, 1);
+        assert_eq!(value, FieldNames { Payload: 15 });
+        assert_eq!(MacroValueFmt.parse(&&[42][..]).unwrap(), (1, 42));
+        assert_eq!(LastByteFmt.parse(&&[255][..]).unwrap(), (1, LastByte::Last));
+        assert_eq!(
+            LastByteFmt.parse(&&[0][..]).unwrap(),
+            (1, LastByte::Unknown(0))
+        );
+        // The explicit Rust discriminant is 0; the Unknown payload can
+        // still hold a different wire value.
+        let (n, value) = OutOfOrderFmt.parse(&&[3][..]).unwrap();
+        assert_eq!(n, 1);
+        assert_eq!(value, OutOfOrder::Unknown(3));
+        assert_eq!(OutOfOrderFmt.prepare(&value).unwrap(), 1);
+        let mut out = [0];
+        OutOfOrderFmt.serialize(&value, &mut out);
+        assert_eq!(out, [3]);
+    }
+}
 
 #[cfg(test)]
 mod serializer_composition_regressions {

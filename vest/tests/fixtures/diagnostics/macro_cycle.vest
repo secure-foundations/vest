@@ -1,0 +1,3 @@
+macro left!(x) = right!(x)
+macro right!(x) = left!(x)
+fmt = left!(u8)

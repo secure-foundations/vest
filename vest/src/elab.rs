@@ -1,239 +1,226 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{ast::*, utils::VestHasherBuilder};
+use crate::ast::*;
 
-/// Elaborate the AST:
-/// - expand the macro invocations
-/// - expand the inlined, anonymous combinator definitions
-///
-/// Definitions are left in their original DSL source order (with any lifted
-/// anonymous helper formats appended at the end). Downstream passes
-/// (type checking and codegen) no longer require a topological pre-sort, so the
-/// emitted Rust mirrors the order of the `.vest` source.
-///
-/// Returns the names of the definitions lifted out of anonymous formats.
-pub fn elaborate(ast: &mut Vec<Definition>) -> HashSet<String> {
-    // expand the macro invocations
-    expand_macros(ast);
-    // for defn in ast.iter() {
-    //     println!("{}", defn);
-    // }
-
-    // expand the inlined, anonymous combinator definitions
+pub fn elaborate(ast: &mut Vec<Definition>) -> BuildResult<HashSet<String>> {
+    expand_macros(ast)?;
+    // Keep source order, appending any named helpers for anonymous formats.
     expand_definitions(ast)
-    // println!("Number of definitions: {}", ast.len());
 }
 
-pub struct ElabCtx<'ast> {
-    pub dependencies: Vec<(String, CombinatorInner<'ast>)>,
-}
-
-impl<'ast> ElabCtx<'ast> {
-    pub fn new() -> Self {
-        Self {
-            dependencies: Vec::new(),
-        }
-    }
-
-    pub fn reset(&mut self) {
-        self.dependencies.clear();
-    }
+#[derive(Default)]
+struct ElabCtx<'ast> {
+    dependencies: Vec<(String, CombinatorInner<'ast>)>,
 }
 
 type MacroDefn<'ast> = (Vec<String>, Combinator<'ast>);
 
-/// Expand the macro invocations
-fn expand_macros(ast: &mut Vec<Definition>) {
-    // collect the macro definitions
-    let mut macro_defns = HashMap::with_hasher(VestHasherBuilder);
-    for defn in ast.iter() {
-        if let Definition::MacroDefn { name, params, body } = defn {
-            macro_defns.insert(name.name.clone(), (params.clone(), body.clone()));
-        }
-    }
-    // remove the macro definitions
-    ast.retain(|defn| !matches!(defn, Definition::MacroDefn { .. }));
-    // traverse the AST and expand the macro invocations "in-place"
-    for defn in ast.iter_mut() {
-        expand_macros_in_defn(defn, &macro_defns);
-    }
-}
-
-fn expand_macros_in_defn<'ast>(
-    defn: &mut Definition<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
-) {
-    match defn {
-        Definition::Combinator { combinator, .. } => {
-            expand_macros_in_combinator(combinator, macro_defns);
-        }
-        Definition::ConstCombinator { .. } => {
-            // TODO: we don't support top-level const definition rn; may add support in the future
-        }
-        _ => {}
-    }
-}
-
-/// Expand the macro invocations in the combinator with the given macro definitions
-fn expand_macros_in_combinator<'ast>(
-    combinator: &mut Combinator<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
-) {
-    if let Some(and_then) = &mut combinator.and_then {
-        expand_macros_in_combinator(and_then, macro_defns);
-    }
-    expand_macros_in_combinator_inner(&mut combinator.inner, macro_defns);
-}
-
-fn expand_macros_in_combinator_inner<'ast>(
-    combinator_inner: &mut CombinatorInner<'ast>,
-    macro_defns: &HashMap<String, MacroDefn<'ast>, VestHasherBuilder>,
-) {
-    match combinator_inner {
-        // base case
-        CombinatorInner::MacroInvocation { name, args } => {
-            if let Some((params, body)) = macro_defns.get(name) {
-                let mut body_expanded = body.clone();
-                for (param, arg) in std::iter::zip(params, args) {
-                    substitute_in_combinator(&mut body_expanded, param, arg.to_owned());
-                }
-                *combinator_inner = body_expanded.inner;
+fn expand_macros(ast: &mut Vec<Definition>) -> BuildResult<()> {
+    let mut macros = HashMap::new();
+    for def in ast.iter() {
+        if let Definition::MacroDefn { name, params, body } = def {
+            if params.iter().collect::<HashSet<_>>().len() != params.len() {
+                return Err(invalid_token(name.span, "duplicate macro parameter"));
             }
-        } // recursive cases
-        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
-            for field in fields {
-                match field {
-                    StructField::Ordinary { combinator, .. }
-                    | StructField::Dependent { combinator, .. } => {
-                        expand_macros_in_combinator(combinator, macro_defns);
-                    }
-                    StructField::Const { .. } => {}
-                }
+            if macros
+                .insert(name.name.clone(), (params.clone(), body.clone()))
+                .is_some()
+            {
+                return Err(invalid_token(name.span, "duplicate macro definition"));
             }
         }
-        CombinatorInner::Wrap(WrapCombinator {
-            prior,
+    }
+    ast.retain(|def| !matches!(def, Definition::MacroDefn { .. }));
+    let mut expander = MacroExpander {
+        macros,
+        active: vec![],
+    };
+    for def in ast {
+        if let Definition::Combinator {
             combinator,
-            post,
+            param_defns,
             ..
-        }) => {
-            for _combinator in prior {}
-            expand_macros_in_combinator(combinator, macro_defns);
-            for _combinator in post {}
+        } = def
+        {
+            for ParamDefn::Dependent { combinator, .. } in param_defns {
+                expander.expand_inner(combinator)?;
+            }
+            expander.expand(combinator)?;
         }
-        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
-            Choices::Enums(enums) => {
-                for (_, combinator) in enums {
-                    expand_macros_in_combinator(combinator, macro_defns);
+    }
+    Ok(())
+}
+
+/// The two macro passes share this traversal so that adding a child-
+/// bearing AST node cannot make substitution and expansion disagree.
+fn visit_children<'i>(
+    inner: &mut CombinatorInner<'i>,
+    mut visit: impl FnMut(&mut Combinator<'i>) -> BuildResult<()>,
+) -> BuildResult<()> {
+    match inner {
+        CombinatorInner::Struct(s) => {
+            for field in &mut s.fields {
+                if let StructField::Ordinary { combinator, .. }
+                | StructField::Dependent { combinator, .. } = field
+                {
+                    visit(combinator)?;
                 }
             }
-            Choices::Ints(ints) => {
-                for (_, combinator) in ints {
-                    expand_macros_in_combinator(combinator, macro_defns);
+        }
+        CombinatorInner::Choice(c) => match &mut c.choices {
+            Choices::Enums(branches) => {
+                for (_, body) in branches {
+                    visit(body)?;
                 }
             }
-            Choices::Arrays(arrays) => {
-                for (_, combinator) in arrays {
-                    expand_macros_in_combinator(combinator, macro_defns);
+            Choices::Ints(branches) => {
+                for (_, body) in branches {
+                    visit(body)?;
+                }
+            }
+            Choices::Arrays(branches) => {
+                for (_, body) in branches {
+                    visit(body)?;
                 }
             }
         },
-        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
-            expand_macros_in_combinator(combinator, macro_defns);
+        CombinatorInner::Wrap(WrapCombinator { combinator, .. })
+        | CombinatorInner::Vec(VecCombinator::Vec(combinator))
+        | CombinatorInner::Array(ArrayCombinator { combinator, .. })
+        | CombinatorInner::Option(OptionCombinator(combinator)) => visit(combinator)?,
+        CombinatorInner::Bits(_)
+        | CombinatorInner::ConstraintInt(_)
+        | CombinatorInner::ConstraintEnum(_)
+        | CombinatorInner::Enum(_)
+        | CombinatorInner::Bytes(_)
+        | CombinatorInner::Tail(_)
+        | CombinatorInner::Nothing(_)
+        | CombinatorInner::Never(_)
+        | CombinatorInner::Invocation(_)
+        | CombinatorInner::MacroInvocation { .. } => {}
+    }
+    Ok(())
+}
+
+struct MacroExpander<'i> {
+    macros: HashMap<String, MacroDefn<'i>>,
+    active: Vec<String>,
+}
+
+impl<'i> MacroExpander<'i> {
+    fn expand(&mut self, comb: &mut Combinator<'i>) -> BuildResult<()> {
+        if let Some(next) = &mut comb.and_then {
+            self.expand(next)?;
         }
-        CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
-            expand_macros_in_combinator(combinator, macro_defns);
+        if let Some(mut expanded) = self.invocation(&mut comb.inner)? {
+            let mut end = &mut expanded.and_then;
+            while let Some(next) = end {
+                end = &mut next.and_then;
+            }
+            *end = comb.and_then.take();
+            comb.inner = expanded.inner;
+            comb.and_then = expanded.and_then;
+        } else {
+            visit_children(&mut comb.inner, |child| self.expand(child))?;
         }
-        CombinatorInner::Option(OptionCombinator(combinator)) => {
-            expand_macros_in_combinator(combinator, macro_defns);
+        Ok(())
+    }
+
+    fn expand_inner(&mut self, inner: &mut CombinatorInner<'i>) -> BuildResult<()> {
+        if let Some(expanded) = self.invocation(inner)? {
+            if expanded.and_then.is_some() {
+                return Err(invalid_token(
+                    inner.as_span(),
+                    "a macro expanding to a >>= chain is not supported in this position",
+                ));
+            }
+            *inner = expanded.inner;
+        } else {
+            visit_children(inner, |child| self.expand(child))?;
         }
-        _ => {}
+        Ok(())
+    }
+
+    fn invocation(
+        &mut self,
+        inner: &mut CombinatorInner<'i>,
+    ) -> BuildResult<Option<Combinator<'i>>> {
+        let CombinatorInner::MacroInvocation { name, args, span } = inner else {
+            return Ok(None);
+        };
+        let Some((params, mut body)) = self.macros.get(name).cloned() else {
+            return Err(invalid_token(*span, format!("undefined macro `{name}!`")));
+        };
+        if params.len() != args.len() {
+            return Err(invalid_token(
+                *span,
+                format!(
+                    "macro `{name}!` expects {} arguments, got {}",
+                    params.len(),
+                    args.len(),
+                ),
+            ));
+        }
+        for arg in args.iter_mut() {
+            self.expand_inner(arg)?;
+        }
+        if self.active.contains(name) {
+            return Err(invalid_token(
+                *span,
+                format!("recursive expansion of macro `{name}!`"),
+            ));
+        }
+        let replacements = params
+            .iter()
+            .zip(args.iter())
+            .map(|(p, a)| (p.as_str(), a))
+            .collect();
+        substitute(&mut body, &replacements)?;
+        self.active.push(name.clone());
+        let result = self.expand(&mut body);
+        self.active.pop();
+        result.map(|()| Some(body))
     }
 }
 
-/// Substitute all occurrences of `param` in `body` with `arg`
-/// - `param` implicitly refers to the `CombinatorInvocation`s with the same name
-fn substitute_in_combinator<'ast>(
-    body: &mut Combinator<'ast>,
-    param: &str,
-    arg: CombinatorInner<'ast>,
-) {
-    if let Some(and_then) = &mut body.and_then {
-        substitute_in_combinator(and_then, param, arg.clone());
+fn substitute<'i>(
+    comb: &mut Combinator<'i>,
+    replacements: &HashMap<&str, &CombinatorInner<'i>>,
+) -> BuildResult<()> {
+    substitute_inner(&mut comb.inner, replacements)?;
+    if let Some(next) = &mut comb.and_then {
+        substitute(next, replacements)?;
     }
-    substitute_in_combinator_inner(&mut body.inner, param, arg);
+    Ok(())
 }
 
-fn substitute_in_combinator_inner<'ast>(
-    body: &mut CombinatorInner<'ast>,
-    param: &str,
-    arg: CombinatorInner<'ast>,
-) {
-    match body {
-        // base case
-        CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-            if func.name == param {
-                *body = arg;
-            }
-        }
-        // recursive cases
-        CombinatorInner::Struct(StructCombinator { fields, .. }) => {
-            for field in fields {
-                match field {
-                    StructField::Ordinary { combinator, .. }
-                    | StructField::Dependent { combinator, .. } => {
-                        substitute_in_combinator(combinator, param, arg.clone());
-                    }
-                    StructField::Const { .. } => {}
+fn substitute_inner<'i>(
+    inner: &mut CombinatorInner<'i>,
+    replacements: &HashMap<&str, &CombinatorInner<'i>>,
+) -> BuildResult<()> {
+    match inner {
+        CombinatorInner::Invocation(inv) => {
+            if let Some(replacement) = replacements.get(inv.func.name.as_str()) {
+                if !inv.args.is_empty() {
+                    return Err(invalid_token(
+                        inv.span,
+                        "macro parameters do not take arguments",
+                    ));
                 }
+                *inner = (*replacement).clone();
             }
         }
-        CombinatorInner::Wrap(WrapCombinator {
-            prior,
-            combinator,
-            post,
-            ..
-        }) => {
-            for _combinator in prior {
-                // TODO: skip const fields for now
-            }
-            substitute_in_combinator(combinator, param, arg.clone());
-            for _combinator in post {
-                // TODO: skip const fields for now
+        CombinatorInner::MacroInvocation { args, .. } => {
+            for arg in args {
+                substitute_inner(arg, replacements)?;
             }
         }
-        CombinatorInner::Choice(ChoiceCombinator { choices, .. }) => match choices {
-            Choices::Enums(enums) => {
-                for (_, combinator) in enums {
-                    substitute_in_combinator(combinator, param, arg.clone());
-                }
-            }
-            Choices::Ints(ints) => {
-                for (_, combinator) in ints {
-                    substitute_in_combinator(combinator, param, arg.clone());
-                }
-            }
-            Choices::Arrays(arrays) => {
-                for (_, combinator) in arrays {
-                    substitute_in_combinator(combinator, param, arg.clone());
-                }
-            }
-        },
-        CombinatorInner::Vec(VecCombinator::Vec(combinator)) => {
-            substitute_in_combinator(combinator, param, arg.clone());
-        }
-        CombinatorInner::Array(ArrayCombinator { combinator, .. }) => {
-            substitute_in_combinator(combinator, param, arg.clone());
-        }
-        CombinatorInner::Option(OptionCombinator(combinator)) => {
-            substitute_in_combinator(combinator, param, arg.clone());
-        }
-        CombinatorInner::ConstraintEnum(..) => {}
-        _ => {}
+        _ => visit_children(inner, |child| substitute(child, replacements))?,
     }
+    Ok(())
 }
 
-fn expand_definitions(ast: &mut Vec<Definition>) -> HashSet<String> {
+fn expand_definitions(ast: &mut Vec<Definition>) -> BuildResult<HashSet<String>> {
     let mut expanded = Vec::new();
     let mut used_names: HashSet<String> = ast
         .iter()
@@ -244,9 +231,9 @@ fn expand_definitions(ast: &mut Vec<Definition>) -> HashSet<String> {
             _ => None,
         })
         .collect();
-    let mut elab_ctx = ElabCtx::new();
+    let mut elab_ctx = ElabCtx::default();
     for defn in ast.iter_mut() {
-        elab_ctx.reset();
+        elab_ctx.dependencies.clear();
         match defn {
             Definition::Combinator {
                 name,
@@ -254,21 +241,39 @@ fn expand_definitions(ast: &mut Vec<Definition>) -> HashSet<String> {
                 param_defns,
                 ..
             } => {
-                param_defns.iter().for_each(|param_defn| {
+                for param_defn in param_defns {
                     let ParamDefn::Dependent {
-                        name, combinator, ..
+                        name: param,
+                        combinator,
+                        ..
                     } = param_defn;
+                    let mut parameter_format = Combinator {
+                        inner: combinator.clone(),
+                        and_then: None,
+                        span: combinator.as_span(),
+                    };
+                    expand_child_combinator(
+                        &child_generated_name(
+                            &name.name,
+                            &format!("param_{}", generated_segment(&param.name)),
+                        ),
+                        &mut parameter_format,
+                        &mut expanded,
+                        &mut elab_ctx,
+                        &mut used_names,
+                    )?;
+                    *combinator = parameter_format.inner;
                     elab_ctx
                         .dependencies
-                        .push((name.name.to_owned(), combinator.clone()));
-                });
+                        .push((param.name.to_owned(), combinator.clone()));
+                }
                 expand_combinator(
                     name.name.as_str(),
                     combinator,
                     &mut expanded,
                     &mut elab_ctx,
                     &mut used_names,
-                );
+                )?;
             }
             Definition::ConstCombinator { .. } => {}
             _ => {}
@@ -282,7 +287,7 @@ fn expand_definitions(ast: &mut Vec<Definition>) -> HashSet<String> {
         })
         .collect();
     ast.extend(expanded);
-    lifted
+    Ok(lifted)
 }
 
 fn expand_combinator<'ast>(
@@ -291,9 +296,9 @@ fn expand_combinator<'ast>(
     expanded: &mut Vec<Definition<'ast>>,
     elab_ctx: &mut ElabCtx<'ast>,
     used_names: &mut HashSet<String>,
-) {
+) -> BuildResult<()> {
     if let Some(and_then) = &mut combinator.and_then {
-        expand_child_combinator(name, and_then, expanded, elab_ctx, used_names);
+        expand_child_combinator(name, and_then, expanded, elab_ctx, used_names)?;
     }
 
     match &mut combinator.inner {
@@ -309,7 +314,7 @@ fn expand_combinator<'ast>(
                             expanded,
                             elab_ctx,
                             used_names,
-                        );
+                        )?;
                     }
                     StructField::Dependent {
                         label, combinator, ..
@@ -320,7 +325,7 @@ fn expand_combinator<'ast>(
                             expanded,
                             elab_ctx,
                             used_names,
-                        );
+                        )?;
                         elab_ctx
                             .dependencies
                             .push((label.name.to_owned(), combinator.inner.clone()));
@@ -338,7 +343,7 @@ fn expand_combinator<'ast>(
                         expanded,
                         elab_ctx,
                         used_names,
-                    );
+                    )?;
                 }
             }
             Choices::Ints(ints) => {
@@ -349,7 +354,7 @@ fn expand_combinator<'ast>(
                         expanded,
                         elab_ctx,
                         used_names,
-                    );
+                    )?;
                 }
             }
             Choices::Arrays(arrays) => {
@@ -360,7 +365,7 @@ fn expand_combinator<'ast>(
                         expanded,
                         elab_ctx,
                         used_names,
-                    );
+                    )?;
                 }
             }
         },
@@ -371,7 +376,7 @@ fn expand_combinator<'ast>(
                 expanded,
                 elab_ctx,
                 used_names,
-            );
+            )?;
         }
         CombinatorInner::Vec(VecCombinator::Vec(combinator))
         | CombinatorInner::Array(ArrayCombinator { combinator, .. })
@@ -382,11 +387,12 @@ fn expand_combinator<'ast>(
                 expanded,
                 elab_ctx,
                 used_names,
-            );
+            )?;
         }
         CombinatorInner::Bits(_) => {}
         _ => {}
     }
+    Ok(())
 }
 
 fn expand_child_combinator<'ast>(
@@ -395,13 +401,14 @@ fn expand_child_combinator<'ast>(
     expanded: &mut Vec<Definition<'ast>>,
     elab_ctx: &mut ElabCtx<'ast>,
     used_names: &mut HashSet<String>,
-) {
+) -> BuildResult<()> {
     if contains_anonymous_format(combinator) {
         *combinator =
-            lift_anonymous_combinator(generated_base, combinator, expanded, elab_ctx, used_names);
+            lift_anonymous_combinator(generated_base, combinator, expanded, elab_ctx, used_names)?;
     } else {
-        expand_combinator(generated_base, combinator, expanded, elab_ctx, used_names);
+        expand_combinator(generated_base, combinator, expanded, elab_ctx, used_names)?;
     }
+    Ok(())
 }
 
 fn lift_anonymous_combinator<'ast>(
@@ -410,14 +417,14 @@ fn lift_anonymous_combinator<'ast>(
     expanded: &mut Vec<Definition<'ast>>,
     elab_ctx: &ElabCtx<'ast>,
     used_names: &mut HashSet<String>,
-) -> Combinator<'ast> {
+) -> BuildResult<Combinator<'ast>> {
     let generated_name = fresh_generated_name(generated_base, used_names);
     let mut lifted = combinator.clone();
     let mut lifted_ctx = ElabCtx {
         dependencies: elab_ctx.dependencies.clone(),
     };
     let params = sorted_params(&lifted);
-    let param_defns = build_param_defns(&params, &lifted_ctx.dependencies, lifted.span);
+    let param_defns = build_param_defns(&params, &lifted_ctx.dependencies, lifted.span)?;
 
     expand_combinator(
         generated_name.as_str(),
@@ -425,7 +432,7 @@ fn lift_anonymous_combinator<'ast>(
         expanded,
         &mut lifted_ctx,
         used_names,
-    );
+    )?;
 
     expanded.push(Definition::Combinator {
         name: Identifier {
@@ -437,7 +444,7 @@ fn lift_anonymous_combinator<'ast>(
         span: combinator.span,
     });
 
-    Combinator {
+    Ok(Combinator {
         inner: CombinatorInner::Invocation(CombinatorInvocation {
             func: Identifier {
                 name: generated_name,
@@ -448,21 +455,22 @@ fn lift_anonymous_combinator<'ast>(
         }),
         and_then: None,
         span: combinator.span,
-    }
+    })
 }
 
 fn build_param_defns<'ast>(
     params: &[Param<'ast>],
     dependencies: &[(String, CombinatorInner<'ast>)],
     span: Span<'ast>,
-) -> Vec<ParamDefn<'ast>> {
+) -> BuildResult<Vec<ParamDefn<'ast>>> {
     params
         .iter()
         .map(|param| match param {
-            Param::Dependent(name) => ParamDefn::Dependent {
+            Param::Dependent(name) => Ok(ParamDefn::Dependent {
                 name: name.to_owned(),
                 combinator: dependencies
                     .iter()
+                    .rev()
                     .find_map(|(dep_name, dep_combinator)| {
                         if *dep_name == name.name {
                             Some(dep_combinator.clone())
@@ -470,9 +478,9 @@ fn build_param_defns<'ast>(
                             None
                         }
                     })
-                    .unwrap_or_else(|| panic!("Dependent combinator not found: {}", name)),
+                    .ok_or_else(|| invalid_token(name.span, format!("unbound field `@{name}`")))?,
                 span,
-            },
+            }),
         })
         .collect()
 }
@@ -675,7 +683,7 @@ mod tests {
         "#;
 
         let mut ast = from_str(source).unwrap();
-        expand_definitions(&mut ast);
+        expand_definitions(&mut ast).unwrap();
         println!("Elaborated AST:");
         for defn in &ast {
             println!("{}", defn);

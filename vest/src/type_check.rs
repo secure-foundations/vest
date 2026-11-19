@@ -10,12 +10,20 @@ use pest::Span;
 
 #[derive(Debug, Clone)]
 pub struct GlobalCtx<'ast> {
-    pub combinators: HashSet<CombinatorSig<'ast>>,
-    pub const_combinators: HashSet<ConstCombinatorSig<'ast>>,
+    definitions: HashMap<&'ast str, &'ast Combinator<'ast>>,
+    pub combinators: HashMap<&'ast str, CombinatorSig<'ast>>,
+    pub const_combinators: HashMap<&'ast str, ConstCombinatorSig<'ast>>,
     pub enums: HashMap<&'ast str, EnumCombinator<'ast>>, // enum name -> enum combinator
     pub static_sizes: HashMap<String, usize>,
     /// Lower bound on each format's encoded size; see [`SizeMode::Min`].
     pub min_sizes: HashMap<String, usize>,
+}
+
+/// The only input accepted by lowering. All expanded definitions have been
+/// checked against this exact set of signatures and size facts.
+pub(crate) struct CheckedProgram<'ast> {
+    pub(crate) definitions: &'ast [Definition<'ast>],
+    pub(crate) context: GlobalCtx<'ast>,
 }
 
 pub struct LocalCtx<'ast> {
@@ -44,6 +52,7 @@ impl<'ast> LocalCtx<'ast> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct CombinatorSig<'ast> {
     pub name: Identifier<'ast>,
+    pub span: Span<'ast>,
     pub param_defns: &'ast [ParamDefn<'ast>],
     /// Fully resolved combinator for a top-level combinator definition
     /// We need to resolve for two reasons:
@@ -63,59 +72,32 @@ pub struct ConstCombinatorSig<'ast> {
 
 impl<'ast> CombinatorSig<'ast> {
     pub fn as_span(&self) -> Span<'ast> {
-        let body_span = self.resolved_combinator.as_span();
-        let input = body_span.get_input();
-        let mut start = self.name.span.start();
-        let mut end = body_span.end();
-        for param in self.param_defns {
-            let ParamDefn::Dependent { span, .. } = param;
-            start = start.min(span.start());
-            end = end.max(span.end());
-        }
-        Span::new(input, start, end).expect("combinator signature span should be valid")
+        self.span
     }
 }
 
 impl<'ast> GlobalCtx<'ast> {
-    // TODO: return `Result`
-    pub fn resolve<'a>(&'a self, combinator: &'a Combinator<'ast>) -> &'a CombinatorInner<'ast> {
-        if let Some(and_then) = &combinator.and_then {
-            self.resolve(and_then)
-        } else {
-            self.resolve_alias(&combinator.inner)
+    pub(crate) fn resolve<'a>(
+        &'a self,
+        mut combinator: &'a Combinator<'ast>,
+    ) -> Result<&'a CombinatorInner<'ast>, ResolveError> {
+        while let Some(and_then) = &combinator.and_then {
+            combinator = and_then;
         }
+        self.resolve_alias(&combinator.inner)
     }
-    // TODO: return `Result` instead of panic
-    pub fn resolve_alias<'a>(
+
+    pub(crate) fn resolve_alias<'a>(
         &'a self,
         combinator: &'a CombinatorInner<'ast>,
-    ) -> &'a CombinatorInner<'ast> {
+    ) -> Result<&'a CombinatorInner<'ast>, ResolveError> {
         match combinator {
-            CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => {
-                let combinator_sig = self
-                    .combinators
-                    .iter()
-                    .find(|sig| sig.name == *func)
-                    .unwrap_or_else(|| panic!("Format `{}` is not defined", func));
-                &combinator_sig.resolved_combinator
-            }
-            combinator => combinator,
-        }
-    }
-    // TODO: return `Result` instead of panic
-    pub fn resolve_const(&self, combinator: &'ast ConstCombinator) -> &ConstCombinator<'ast> {
-        match combinator {
-            ConstCombinator::ConstCombinatorInvocation { name, .. } => {
-                let const_combinator_sig = self
-                    .const_combinators
-                    .iter()
-                    .find(|sig| sig.name == *name)
-                    .unwrap_or_else(|| {
-                        panic!("Const format `{}` is not defined", name);
-                    });
-                &const_combinator_sig.resolved_combinator
-            }
-            combinator => combinator,
+            CombinatorInner::Invocation(CombinatorInvocation { func, .. }) => self
+                .combinators
+                .get(func.name.as_str())
+                .map(|sig| &sig.resolved_combinator)
+                .ok_or_else(|| ResolveError::CannotResolveType(func.name.clone())),
+            combinator => Ok(combinator),
         }
     }
 }
@@ -415,7 +397,7 @@ fn enum_static_size(enum_comb: &EnumCombinator<'_>) -> Option<usize> {
             enums
         }
     };
-    int_combinator_static_size(&resolve_enum_type(enums))
+    int_combinator_static_size(&resolve_enum_type(enums)?)
 }
 
 fn common_static_size(sizes: impl IntoIterator<Item = Option<usize>>) -> Option<usize> {
@@ -454,6 +436,21 @@ fn eval_const_length_expr(
 
 fn span_as_range(span: &Span) -> std::ops::Range<usize> {
     span.start()..span.end()
+}
+
+pub(crate) fn report_error(
+    source: (&str, &Source),
+    span: Span,
+    message: impl Into<String>,
+) -> VestError {
+    let span = span_as_range(&span);
+    let _ = Report::build(ReportKind::Error, (source.0, span.clone()))
+        .with_config(ariadne::Config::default().with_index_type(ariadne::IndexType::Byte))
+        .with_message(message.into())
+        .with_label(Label::new((source.0, span)).with_color(Color::Red))
+        .finish()
+        .eprint(source);
+    VestError::TypeError
 }
 
 /// Rust keywords (strict and reserved, 2021 edition) and the Verus keywords
@@ -497,8 +494,12 @@ fn check_binding_name(
             .strip_prefix(prefix)
             .is_some_and(|rest| !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()))
     };
-    let reason = if BINDING_KEYWORDS.contains(&name.name.as_str()) {
+    let reason = if name.name == "_" || name.name.contains('.') {
+        format!("`{}` is not a binding name", name.name)
+    } else if BINDING_KEYWORDS.contains(&name.name.as_str()) {
         format!("`{}` is a Rust keyword", name.name)
+    } else if crate::codegen::IMPORTED_PATTERN_NAMES.contains(&name.name.as_str()) {
+        format!("`{name}` conflicts with an imported constructor in the generated Rust")
     } else if RESERVED_BINDINGS.contains(&name.name.as_str()) || numbered('n') || numbered('l') {
         format!("`{}` is reserved for the generated code", name.name)
     } else {
@@ -629,13 +630,14 @@ fn resolve_const_to_inner<'ast>(
     }
 }
 
-pub fn check<'ast>(
+pub(crate) fn check<'ast>(
     ast: &'ast [Definition<'ast>],
     source: (&str, &Source),
-) -> Result<GlobalCtx<'ast>, VestError> {
+) -> Result<CheckedProgram<'ast>, VestError> {
     let mut global_ctx = GlobalCtx {
-        combinators: HashSet::new(),
-        const_combinators: HashSet::new(),
+        definitions: HashMap::new(),
+        combinators: HashMap::new(),
+        const_combinators: HashMap::new(),
         enums: HashMap::new(),
         static_sizes: HashMap::new(),
         min_sizes: HashMap::new(),
@@ -646,7 +648,79 @@ pub fn check<'ast>(
     // what lets the rest of the pipeline drop the topological pre-sort.
     let mut raw_combinators: HashMap<&str, &Combinator> = HashMap::new();
     let mut raw_consts: HashMap<&str, &ConstCombinator> = HashMap::new();
+    let mut names = HashSet::new();
+    let mut generated_types = HashMap::new();
+    let has_bitfields = ast.iter().any(|defn| {
+        matches!(
+            defn,
+            Definition::Combinator {
+                combinator: Combinator {
+                    inner: CombinatorInner::Bits(_),
+                    and_then: None,
+                    ..
+                },
+                ..
+            }
+        )
+    });
+    let imported_types: HashSet<_> =
+        crate::codegen::required_imported_types(has_bitfields).collect();
     for defn in ast {
+        if let Definition::Combinator { name, .. } | Definition::ConstCombinator { name, .. } = defn
+        {
+            if !names.insert(name.name.as_str()) {
+                return Err(report_error(
+                    source,
+                    name.span,
+                    format!("duplicate format definition `{name}`"),
+                ));
+            }
+            let rust = crate::codegen::format_names(&name.name);
+            if !rust.exec.starts_with(|c: char| c.is_ascii_alphabetic()) || rust.exec == "Self" {
+                return Err(report_error(
+                    source,
+                    name.span,
+                    format!("format name `{name}` does not produce a Rust type name"),
+                ));
+            }
+            let mut generated = vec![rust.exec, rust.spec, rust.fmt.clone()];
+            match defn {
+                Definition::Combinator { combinator, .. } => {
+                    generated.push(format!("{}Spec", rust.fmt));
+                    if combinator.and_then.is_none()
+                        && matches!(
+                            combinator.inner,
+                            CombinatorInner::Struct(_)
+                                | CombinatorInner::Choice(_)
+                                | CombinatorInner::Bits(_)
+                                | CombinatorInner::Enum(_),
+                        )
+                    {
+                        generated.push(rust.inner);
+                    }
+                }
+                Definition::ConstCombinator { .. } => {}
+                _ => unreachable!(),
+            }
+            for symbol in generated {
+                if imported_types.contains(symbol.as_str()) {
+                    return Err(report_error(
+                        source,
+                        name.span,
+                        format!(
+                            "format `{name}` would generate Rust name `{symbol}`, which conflicts with a name needed by the generated code; choose a different format name"
+                        ),
+                    ));
+                }
+                if let Some(previous) = generated_types.insert(symbol.clone(), name) {
+                    return Err(report_error(
+                        source,
+                        name.span,
+                        format!("`{name}` and `{previous}` both generate the Rust name `{symbol}`",),
+                    ));
+                }
+            }
+        }
         match defn {
             Definition::Combinator {
                 name, combinator, ..
@@ -683,39 +757,15 @@ pub fn check<'ast>(
                     &mut Vec::new(),
                 )?;
 
-                match global_ctx.combinators.iter().find(|sig| &sig.name == name) {
-                    Some(sig) => {
-                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                            .with_message(format!("duplicate format definition `{}`", name))
-                            .with_label(
-                                Label::new((source.0, span_as_range(span)))
-                                    .with_message("This format is defined twice")
-                                    .with_color(Color::Red),
-                            )
-                            .with_label(
-                                Label::new((
-                                    source.0,
-                                    span_as_range(&sig.resolved_combinator.as_span()),
-                                ))
-                                .with_message(format!(
-                                    "The {} format is already defined here",
-                                    name
-                                ))
-                                .with_color(Color::Yellow),
-                            )
-                            .finish()
-                            .eprint(source)
-                            .unwrap();
-                        return Err(VestError::TypeError);
-                    }
-                    None => {
-                        global_ctx.combinators.insert(CombinatorSig {
-                            name: name.clone(),
-                            param_defns,
-                            resolved_combinator,
-                        });
-                    }
-                }
+                global_ctx.combinators.insert(
+                    name.name.as_str(),
+                    CombinatorSig {
+                        name: name.clone(),
+                        span: *span,
+                        param_defns,
+                        resolved_combinator,
+                    },
+                );
 
                 if let Combinator {
                     inner: CombinatorInner::Enum(enum_combinator),
@@ -736,48 +786,23 @@ pub fn check<'ast>(
                 let resolved_combinator =
                     resolve_const_to_inner(const_combinator, &raw_consts, source, &mut Vec::new())?;
 
-                match global_ctx
-                    .const_combinators
-                    .iter()
-                    .find(|sig| &sig.name == name)
-                {
-                    Some(sig) => {
-                        Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                            .with_message(format!("duplicate const format definition `{}`", name))
-                            .with_label(
-                                Label::new((source.0, span_as_range(span)))
-                                    .with_message("This const format is defined twice")
-                                    .with_color(Color::Red),
-                            )
-                            .with_label(
-                                Label::new((
-                                    source.0,
-                                    span_as_range(&sig.resolved_combinator.as_span()),
-                                ))
-                                .with_message(format!(
-                                    "The {} const format is already defined here",
-                                    name
-                                ))
-                                .with_color(Color::Yellow),
-                            )
-                            .finish()
-                            .eprint(source)
-                            .unwrap();
-                        return Err(VestError::TypeError);
-                    }
-                    None => {
-                        global_ctx.const_combinators.insert(ConstCombinatorSig {
-                            name: name.clone(),
-                            resolved_combinator,
-                        });
-                    }
-                }
+                global_ctx.const_combinators.insert(
+                    name.name.as_str(),
+                    ConstCombinatorSig {
+                        name: Identifier {
+                            name: name.name.clone(),
+                            span: *span,
+                        },
+                        resolved_combinator,
+                    },
+                );
             }
             Definition::Endianess(_) => {}
             _ => unimplemented!(),
         }
     }
 
+    global_ctx.definitions = raw_combinators;
     global_ctx.static_sizes = StaticSizeEnv::new(ast).compute_all();
     global_ctx.min_sizes = StaticSizeEnv::new_min(ast).compute_all();
 
@@ -785,7 +810,57 @@ pub fn check<'ast>(
         check_defn(defn, &mut local_ctx, &global_ctx, source)?;
     }
 
-    Ok(global_ctx)
+    check_value_alias_cycles(ast, source)?;
+    Ok(CheckedProgram {
+        definitions: ast,
+        context: global_ctx,
+    })
+}
+
+/// Rust allows recursion through a nominal struct or enum, not recursion in
+/// type aliases, even if the path crosses Box, Vec, Option, or an array.
+fn check_value_alias_cycles(ast: &[Definition], source: (&str, &Source)) -> Result<(), VestError> {
+    fn alias_target<'a>(mut body: &'a Combinator<'_>) -> Option<&'a Identifier<'a>> {
+        loop {
+            if let Some(next) = &body.and_then {
+                body = next;
+                continue;
+            }
+            match &body.inner {
+                CombinatorInner::Invocation(inv) => return Some(&inv.func),
+                CombinatorInner::Wrap(WrapCombinator { combinator, .. })
+                | CombinatorInner::Vec(VecCombinator::Vec(combinator))
+                | CombinatorInner::Array(ArrayCombinator { combinator, .. })
+                | CombinatorInner::Option(OptionCombinator(combinator)) => body = combinator,
+                _ => return None,
+            }
+        }
+    }
+    let mut graph = HashMap::new();
+    let mut spans = HashMap::new();
+    for def in ast {
+        if let Definition::Combinator {
+            name, combinator, ..
+        } = def
+        {
+            let deps = alias_target(combinator).map(|target| target.name.clone());
+            graph.insert(name.name.clone(), deps.into_iter().collect());
+            spans.insert(name.name.as_str(), name.span);
+        }
+    }
+    for component in crate::utils::tarjan_scc(&graph) {
+        if crate::utils::scc_is_recursive(&component, &graph) {
+            return Err(report_error(
+                source,
+                spans[component[0].as_str()],
+                format!(
+                "recursive type aliases ({}) need a struct or choice to define their value type",
+                component.join(", "),
+            ),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn check_defn<'ast>(
@@ -858,11 +933,7 @@ fn check_const_combinator_invocation<'ast>(
     global_ctx: &'ast GlobalCtx<'ast>,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    match global_ctx
-        .const_combinators
-        .iter()
-        .find(|sig| sig.name == *name)
-    {
+    match global_ctx.const_combinators.get(name.name.as_str()) {
         Some(..) => Ok(()),
         None => {
             Report::build(ReportKind::Error, (source.0, span_as_range(&span)))
@@ -891,7 +962,9 @@ fn check_const_enum_combinator<'ast>(
     // Reuse combinator invocation checks (no params allowed unless in scope)
     check_combinator_invocation(combinator, &[], local_ctx, global_ctx, source, false)?;
     let binding = CombinatorInner::Invocation(combinator.clone());
-    let resolved = global_ctx.resolve_alias(&binding);
+    let resolved = global_ctx
+        .resolve_alias(&binding)
+        .map_err(|err| emit_resolve_error(err, span, source))?;
     match resolved {
         CombinatorInner::Enum(enum_comb) => {
             let variants = match enum_comb {
@@ -935,114 +1008,37 @@ fn check_const_enum_combinator<'ast>(
     }
 }
 
+/// Both constants and choice patterns denote literal byte sequences.
+fn check_byte_array(
+    values: &ConstArray,
+    expected_len: usize,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    let (len, integers): (usize, &[i128]) = match values {
+        ConstArray::Int { ints, .. } => (ints.len(), ints),
+        ConstArray::Repeat { repeat, count, .. } => (*count, std::slice::from_ref(repeat)),
+        ConstArray::Char { chars, .. } => (chars.len(), &[]),
+        ConstArray::Wildcard => return Ok(()),
+    };
+    let span = values.as_span();
+    if len != expected_len {
+        return Err(report_error(
+            source,
+            span,
+            format!("mismatched byte array length: expected {expected_len}, got {len}",),
+        ));
+    }
+    for value in integers {
+        check_const_int_combinator(&IntCombinator::Unsigned(8), value, &span, source)?;
+    }
+    Ok(())
+}
+
 fn check_const_bytes_combinator(
     combinator: &ConstBytesCombinator,
     source: (&str, &Source),
 ) -> Result<(), VestError> {
-    let ConstBytesCombinator { len, values, span } = combinator;
-    match values {
-        ConstArray::Int {
-            ints: int_vals,
-            span: array_span,
-        } => {
-            if int_vals.len() != *len {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("mismatched byte array length")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                                "Length of byte array does not match the specified length (expected {}, got {})",
-                                len, int_vals.len()
-                            ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
-            }
-            for value in int_vals {
-                if *value < u8::MIN.into() || *value > u8::MAX.into() {
-                    Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                        .with_message("byte value out of range")
-                        .with_label(
-                            Label::new((source.0, span_as_range(array_span)))
-                                .with_message(format!(
-                                    "Value {} is out of range for u8 (expected 0-255)",
-                                    value
-                                ))
-                                .with_color(Color::Red),
-                        )
-                        .finish()
-                        .eprint(source)
-                        .unwrap();
-                    // panic!("Value {} is out of range for u8", value);
-                    return Err(VestError::TypeError);
-                }
-            }
-        }
-        ConstArray::Repeat {
-            repeat: int_val,
-            count,
-            span: array_span,
-        } => {
-            if *count != *len {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("mismatched byte array length")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                                "Length of byte array does not match the specified length (expected {}, got {})",
-                                len, count
-                            ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
-            }
-            if *int_val < u8::MIN.into() || *int_val > u8::MAX.into() {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("byte value out of range")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                                "Value {} is out of range for u8 (expected 0-255)",
-                                int_val
-                            ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
-            }
-        }
-        ConstArray::Char {
-            chars,
-            span: array_span,
-        } => {
-            if chars.len() != *len {
-                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                    .with_message("mismatched char array length")
-                    .with_label(
-                        Label::new((source.0, span_as_range(array_span)))
-                            .with_message(format!(
-                                "Length of char array does not match the specified length (expected {}, got {})",
-                                len, chars.len()
-                            ))
-                            .with_color(Color::Red),
-                    )
-                    .finish()
-                    .eprint(source)
-                    .unwrap();
-                return Err(VestError::TypeError);
-            }
-        }
-        ConstArray::Wildcard => {}
-    }
-    Ok(())
+    check_byte_array(&combinator.values, combinator.len, source)
 }
 
 fn check_const_int_combinator(
@@ -1272,10 +1268,7 @@ fn check_combinator_inner<'ast>(
             global_ctx,
             source,
         ),
-        Enum(
-            EnumCombinator::Exhaustive { enums, span }
-            | EnumCombinator::NonExhaustive { enums, span },
-        ) => check_enum_combinator(enums, local_ctx, global_ctx, *span, source),
+        Enum(e) => check_enum_combinator(e, source),
         Choice(ChoiceCombinator {
             depend_id,
             choices,
@@ -1290,7 +1283,8 @@ fn check_combinator_inner<'ast>(
             source,
         ),
         Vec(VecCombinator::Vec(combinator)) => {
-            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
+            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
+            check_known_nullable_child(combinator, "repetition", global_ctx, source)
         }
         Array(ArrayCombinator {
             combinator,
@@ -1310,7 +1304,8 @@ fn check_combinator_inner<'ast>(
         }
         Tail(TailCombinator { .. }) => Ok(()),
         Option(OptionCombinator(combinator)) => {
-            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)
+            check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
+            check_known_nullable_child(combinator, "optional", global_ctx, source)
         }
         Nothing(NothingCombinator { .. }) => Ok(()),
         Never(NeverCombinator { .. }) => Ok(()),
@@ -1331,6 +1326,65 @@ fn check_combinator_inner<'ast>(
             global_ctx,
             source,
         ),
+    }
+}
+
+/// Reject children that are known to accept empty input. A repetition must
+/// make progress, and an optional cannot distinguish a present empty value
+/// from absence. For more complex cases, the generated proof checks the
+/// required productivity invariant.
+fn check_known_nullable_child(
+    child: &Combinator,
+    kind: &str,
+    ctx: &GlobalCtx,
+    source: (&str, &Source),
+) -> Result<(), VestError> {
+    fn accepts_empty(comb: &Combinator, ctx: &GlobalCtx, active: &mut HashSet<String>) -> bool {
+        use CombinatorInner::*;
+        if comb
+            .and_then
+            .as_deref()
+            .is_some_and(|next| !accepts_empty(next, ctx, active))
+        {
+            return false;
+        }
+        match &comb.inner {
+            Nothing(_) | Tail(_) | Vec(_) | Option(_) => true,
+            Bytes(BytesCombinator { len, .. }) | Array(ArrayCombinator { len, .. }) => {
+                eval_const_length_expr(len, &ctx.static_sizes) == Some(0)
+            }
+            Wrap(WrapCombinator {
+                prior,
+                combinator,
+                post,
+                ..
+            }) => prior.is_empty() && post.is_empty() && accepts_empty(combinator, ctx, active),
+            Struct(StructCombinator { fields, .. }) => fields.iter().all(|field| match field {
+                StructField::Dependent { combinator, .. }
+                | StructField::Ordinary { combinator, .. } => {
+                    accepts_empty(combinator, ctx, active)
+                }
+                StructField::Const { .. } => false,
+            }),
+            Invocation(inv) if active.insert(inv.func.name.clone()) => {
+                let empty = ctx
+                    .definitions
+                    .get(inv.func.name.as_str())
+                    .is_some_and(|body| accepts_empty(body, ctx, active));
+                active.remove(&inv.func.name);
+                empty
+            }
+            _ => false,
+        }
+    }
+    if accepts_empty(child, ctx, &mut HashSet::new()) {
+        Err(report_error(
+            source,
+            child.span,
+            format!("{kind} child can accept empty input"),
+        ))
+    } else {
+        Ok(())
     }
 }
 
@@ -1364,7 +1418,7 @@ fn check_combinator_invocation<'ast>(
         args,
         span,
     } = combinator;
-    match global_ctx.combinators.iter().find(|sig| sig.name == *name) {
+    match global_ctx.combinators.get(name.name.as_str()) {
         None => {
             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                 .with_message("undefined format")
@@ -1385,16 +1439,10 @@ fn check_combinator_invocation<'ast>(
                         EnumCombinator::Exhaustive { enums, .. }
                         | EnumCombinator::NonExhaustive { enums, .. } => enums,
                     };
-                    let inferred = resolve_enum_type(enums);
-                    let is_byte_aligned = match inferred {
-                        IntCombinator::Signed(bits) | IntCombinator::Unsigned(bits) => {
-                            bits % 8 == 0
-                        }
-                        IntCombinator::BtcVarint | IntCombinator::ULEB128 => true,
-                    };
-                    if !is_byte_aligned {
+                    let inferred = require_enum_type(enums, *span, source)?;
+                    if !matches!(inferred, IntCombinator::Unsigned(8 | 16 | 24 | 32 | 64)) {
                         Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                            .with_message("bit-sized enum used outside of bitfield")
+                            .with_message("enum without a supported byte-format width used outside of a bitfield")
                             .with_label(
                                 Label::new((source.0, span_as_range(span)))
                                     .with_message(
@@ -1445,7 +1493,9 @@ fn check_combinator_invocation<'ast>(
                             global_ctx,
                             source,
                         )?;
-                        let expected = global_ctx.resolve_alias(combinator);
+                        let expected = global_ctx.resolve_alias(combinator).map_err(|err| {
+                            emit_resolve_error(err, &combinator.as_span(), source)
+                        })?;
                         if !combinator_types_compatible(&arg_combinator, expected, global_ctx) {
                             Report::build(ReportKind::Error, (source.0, span_as_range(span)))
                                 .with_message("argument type mismatch")
@@ -1507,11 +1557,7 @@ fn check_length_expr<'ast>(
                 return Ok(());
             }
 
-            if let Some(sig) = global_ctx
-                .combinators
-                .iter()
-                .find(|sig| sig.name == *format_name)
-            {
+            if let Some(sig) = global_ctx.combinators.get(format_name.name.as_str()) {
                 Report::build(ReportKind::Error, (source.0, span_as_range(size_span)))
                     .with_message("format does not have a statically-known size")
                     .with_label(
@@ -1546,13 +1592,23 @@ fn check_length_expr<'ast>(
         }
         LengthExpr::BinOp { left, right, .. } => {
             check_length_expr(left, span, param_defns, local_ctx, global_ctx, source)?;
-            check_length_expr(right, span, param_defns, local_ctx, global_ctx, source)
+            check_length_expr(right, span, param_defns, local_ctx, global_ctx, source)?;
+            if len.collect_dependent_ids().is_empty()
+                && eval_const_length_expr(len, &global_ctx.static_sizes).is_none()
+            {
+                return Err(report_error(
+                    source,
+                    len.as_span(),
+                    "invalid constant length arithmetic (overflow, underflow, or division by zero)",
+                ));
+            }
+            Ok(())
         }
     }
 }
 
 #[derive(Debug, Clone)]
-enum ResolveError {
+pub(crate) enum ResolveError {
     UnboundField(String),
     NotDependentField { field_name: String },
     NotDefinedInBitfield { field_name: String },
@@ -1654,7 +1710,7 @@ fn resolve_root<'ast>(
         .find(|(id, _)| id.name == root_id)
         .map(|(_, comb)| comb)
     {
-        Ok(global_ctx.resolve(combinator).clone())
+        global_ctx.resolve(combinator).cloned()
     } else {
         let param_defn = param_defns
             .iter()
@@ -1662,14 +1718,14 @@ fn resolve_root<'ast>(
 
         match param_defn {
             Some(ParamDefn::Dependent { combinator, .. }) => {
-                Ok(global_ctx.resolve_alias(combinator).clone())
+                global_ctx.resolve_alias(combinator).cloned()
             }
             _ => Err(ResolveError::UnboundField(root_id.to_string())),
         }
     }
 }
 
-fn resolve_path<'ast>(
+pub(crate) fn resolve_path<'ast>(
     root_combinator: CombinatorInner<'ast>,
     path: &[&str],
     global_ctx: &'ast GlobalCtx<'ast>,
@@ -1687,7 +1743,7 @@ fn resolve_path<'ast>(
                 match field {
                     Some(StructField::Dependent { combinator, .. })
                     | Some(StructField::Ordinary { combinator, .. }) => {
-                        current_combinator = global_ctx.resolve(combinator).clone();
+                        current_combinator = global_ctx.resolve(combinator)?.clone();
                     }
                     _ => {
                         return Err(ResolveError::NotDependentField {
@@ -1717,10 +1773,7 @@ fn resolve_path<'ast>(
                                     span: *span,
                                 }),
                                 BitFieldCombinator::Invocation(inv) => {
-                                    let sig = global_ctx
-                                        .combinators
-                                        .iter()
-                                        .find(|sig| sig.name == inv.func);
+                                    let sig = global_ctx.combinators.get(inv.func.name.as_str());
                                     if let Some(sig) = sig {
                                         sig.resolved_combinator.clone()
                                     } else {
@@ -1740,10 +1793,7 @@ fn resolve_path<'ast>(
                 }
             }
             CombinatorInner::Invocation(inv) => {
-                let sig = global_ctx
-                    .combinators
-                    .iter()
-                    .find(|sig| sig.name == inv.func);
+                let sig = global_ctx.combinators.get(inv.func.name.as_str());
                 if let Some(sig) = sig {
                     current_combinator = sig.resolved_combinator.clone();
                     return resolve_path(current_combinator, &path[i..], global_ctx);
@@ -1871,8 +1921,7 @@ fn resolve_constraint_enum_target<'ast>(
 ) -> Option<&'ast EnumCombinator<'ast>> {
     global_ctx
         .combinators
-        .iter()
-        .find(|sig| sig.name == combinator.combinator.func)
+        .get(combinator.combinator.func.name.as_str())
         .and_then(|sig| match &sig.resolved_combinator {
             CombinatorInner::Enum(enum_comb) => Some(enum_comb),
             _ => None,
@@ -1956,12 +2005,7 @@ impl<'ast> Choices<'ast> {
                 .unwrap_or_else(|| panic!("Choices::Enums should not be empty")),
             Choices::Ints(ints) => ints
                 .first()
-                .map(|(elem_opt, _)| {
-                    elem_opt.as_ref().map_or_else(
-                        || panic!("First choice in Choices::Ints should not be wildcard"),
-                        |elem| elem.as_span(),
-                    )
-                })
+                .map(|(elem, body)| elem.as_ref().map_or(body.span, ConstraintElem::as_span))
                 .unwrap_or_else(|| panic!("Choices::Ints should not be empty")),
             Choices::Arrays(arrays) => arrays
                 .first()
@@ -2082,8 +2126,7 @@ fn check_choice_combinator<'ast>(
             CombinatorInner::ConstraintEnum(ConstraintEnumCombinator { combinator, .. }) => {
                 global_ctx
                     .combinators
-                    .iter()
-                    .find(|sig| sig.name == combinator.func)
+                    .get(combinator.func.name.as_str())
                     .and_then(|sig| match &sig.resolved_combinator {
                         CombinatorInner::Enum(e) => Some(e),
                         _ => None,
@@ -2105,7 +2148,9 @@ fn check_choice_combinator<'ast>(
                 )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
-                let combinator = global_ctx.resolve_alias(&combinator);
+                let combinator = global_ctx
+                    .resolve_alias(&combinator)
+                    .map_err(|err| emit_resolve_error(err, &depend_id.span, source))?;
                 // check if `combinator` is defined as an enum
                 if let Some(enum_) = resolve_enum_from(combinator, global_ctx) {
                     let (enum_variants, is_non_exhaustive) = match enum_ {
@@ -2146,9 +2191,11 @@ fn check_choice_combinator<'ast>(
                         }
                     }
                     for (variant, combinator) in enums {
+                        check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
                         if variant.name == "_" {
                             continue;
-                        } else if !enum_variants
+                        }
+                        if !enum_variants
                             .iter()
                             .any(|Enum { name, .. }| name == variant)
                         {
@@ -2204,7 +2251,6 @@ fn check_choice_combinator<'ast>(
                                 .unwrap();
                             return Err(VestError::TypeError);
                         }
-                        check_combinator(combinator, param_defns, local_ctx, global_ctx, source)?;
                     }
                     if !is_non_exhaustive && wildcard_count == 0 {
                         // check for exhaustiveness
@@ -2317,7 +2363,9 @@ fn check_choice_combinator<'ast>(
                 )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
-                let combinator = global_ctx.resolve_alias(&combinator);
+                let combinator = global_ctx
+                    .resolve_alias(&combinator)
+                    .map_err(|err| emit_resolve_error(err, &depend_id.span, source))?;
                 let check_overlap = |patterns: Vec<&ConstraintElem<'_>>| -> Result<(), VestError> {
                     for (i, pattern_i) in patterns.iter().enumerate() {
                         for (j, pattern_j) in patterns.iter().enumerate().skip(i + 1) {
@@ -2410,7 +2458,7 @@ fn check_choice_combinator<'ast>(
                     // check if it's non-exhaustive enum (which is equivalent to an int choice)
                     match enum_ {
                         EnumCombinator::NonExhaustive { enums, .. } => {
-                            let int_combinator = resolve_enum_type(enums);
+                            let int_combinator = require_enum_type(enums, *span, source)?;
                             let mut patterns = Vec::new();
                             for (pattern, combinator) in ints {
                                 if let Some(pattern) = pattern {
@@ -2504,7 +2552,9 @@ fn check_choice_combinator<'ast>(
                 )?;
                 let combinator = combinator.clone();
                 check_combinator_inner(&combinator, param_defns, local_ctx, global_ctx, source)?;
-                let combinator = global_ctx.resolve_alias(&combinator);
+                let combinator = global_ctx
+                    .resolve_alias(&combinator)
+                    .map_err(|err| emit_resolve_error(err, &depend_id.span, source))?;
                 let wildcard_positions = arrays
                     .iter()
                     .enumerate()
@@ -2599,57 +2649,7 @@ fn check_choice_combinator<'ast>(
                                 .unwrap();
                             return Err(VestError::TypeError);
                         }
-                        macro_rules! report_len_mismatch {
-                            ($array:expr, $exp_len:expr, $got_len:expr) => {
-                                Report::build(ReportKind::Error, (source.0, span_as_range(span)))
-                                    .with_message("type mismatch")
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(span)))
-                                            .with_message("Invalid choice format")
-                                            .with_color(Color::Red),
-                                    )
-                                    .with_label(
-                                        Label::new((source.0, span_as_range(&array.as_span())))
-                                            .with_message(format!(
-                                                "Expected length {}, got {}",
-                                                $exp_len, $got_len
-                                            ))
-                                            .with_color(Color::Red),
-                                    )
-                                    .with_label(
-                                        Label::new((
-                                            source.0,
-                                            span_as_range(&combinator.as_span()),
-                                        ))
-                                        .with_message(format!("This is `@{}`'s type", depend_id))
-                                        .with_color(Color::Yellow),
-                                    )
-                                    .finish()
-                                    .eprint(source)
-                                    .unwrap();
-                            };
-                        }
-                        match array {
-                            ConstArray::Int { ints, .. } => {
-                                if ints.len() != len {
-                                    report_len_mismatch!(array, len, ints.len());
-                                    return Err(VestError::TypeError);
-                                }
-                            }
-                            ConstArray::Char { chars, .. } => {
-                                if chars.len() != len {
-                                    report_len_mismatch!(array, len, chars.len());
-                                    return Err(VestError::TypeError);
-                                }
-                            }
-                            ConstArray::Repeat { count, .. } => {
-                                if *count != len {
-                                    report_len_mismatch!(array, len, *count);
-                                    return Err(VestError::TypeError);
-                                }
-                            }
-                            ConstArray::Wildcard => (),
-                        }
+                        check_byte_array(array, len, source)?;
                         check_combinator(comb, param_defns, local_ctx, global_ctx, source)?;
                     }
                 } else {
@@ -2685,13 +2685,11 @@ fn check_choice_combinator<'ast>(
     Ok(())
 }
 
-fn check_enum_combinator(
-    enums: &[Enum],
-    _local_ctx: &mut LocalCtx,
-    _global_ctxx: &GlobalCtx,
-    span: Span,
-    source: (&str, &Source),
-) -> Result<(), VestError> {
+fn check_enum_combinator(en: &EnumCombinator, source: (&str, &Source)) -> Result<(), VestError> {
+    let (enums, span, open) = match en {
+        EnumCombinator::Exhaustive { enums, span } => (enums, *span, false),
+        EnumCombinator::NonExhaustive { enums, span } => (enums, *span, true),
+    };
     // Check that type annotations are consistent:
     // all present type suffixes must agree (unsuffixed values are allowed).
     let first_annotated = enums.iter().find(|e| e.type_annotation.is_some());
@@ -2720,42 +2718,112 @@ fn check_enum_combinator(
         }
     }
 
-    let combinator = resolve_enum_type(enums);
+    let combinator = require_enum_type(enums, span, source)?;
     // Nonstandard unsigned widths are valid declarations for enums used inside
     // `bits`; their use as ordinary formats is rejected at the invocation site.
     // Signed enum carriers, however, have no supported code-generation path.
-    if matches!(
-        combinator,
-        IntCombinator::Signed(_) | IntCombinator::ULEB128
-    ) {
+    if !matches!(combinator, IntCombinator::Unsigned(1..=64)) {
         check_int_combinator_supported(&combinator, &span, source)?;
     }
-    for Enum { value, .. } in enums {
-        check_const_int_combinator(&combinator, value, &span, source)?;
+    let mut names = HashSet::new();
+    let mut values = HashSet::new();
+    for variant in enums {
+        let Enum {
+            name, value, span, ..
+        } = variant;
+        if name.name == "_"
+            || (open && name.name == "Unknown")
+            || BINDING_KEYWORDS.contains(&name.name.as_str())
+        {
+            return Err(report_error(
+                source,
+                name.span,
+                format!("invalid enum variant name `{name}`"),
+            ));
+        }
+        if !names.insert(name.name.as_str()) {
+            return Err(report_error(
+                source,
+                name.span,
+                format!("duplicate enum variant `{name}`"),
+            ));
+        }
+        if !values.insert(*value) {
+            return Err(report_error(
+                source,
+                *span,
+                format!("duplicate enum value `{value}`"),
+            ));
+        }
+        check_const_int_combinator(&combinator, value, span, source)?;
+    }
+    if open && unknown_enum_discriminant(enums, &combinator).is_err() {
+        return Err(report_error(
+            source,
+            span,
+            "open enum has no spare Rust discriminant for `Unknown`; remove `...` to make it a closed enum",
+        ));
     }
     Ok(())
 }
 
+/// Keep Rust's implicit discriminant when it is available. Otherwise choose a
+/// spare one in the Rust carrier, which may be wider than the wire integer.
+/// The discriminant has no effect on the wire codes accepted by `Unknown`.
+pub(crate) fn unknown_enum_discriminant(
+    enums: &[Enum],
+    carrier: &IntCombinator,
+) -> Result<Option<i128>, ()> {
+    let max = (1i128 << carrier.carrier_width()) - 1;
+    let implicit = enums.last().expect("nonempty enum").value + 1;
+    if implicit <= max && !enums.iter().any(|variant| variant.value == implicit) {
+        return Ok(None);
+    }
+    let used = enums
+        .iter()
+        .map(|variant| variant.value)
+        .collect::<HashSet<_>>();
+    // At most used.len() occupied candidates are examined, even for u64.
+    (0..=max)
+        .find(|candidate| !used.contains(candidate))
+        .map(Some)
+        .ok_or(())
+}
+
 /// Resolve the underlying integer type for an enum.
-pub fn resolve_enum_type(enums: &[Enum]) -> IntCombinator {
+pub fn resolve_enum_type(enums: &[Enum]) -> Option<IntCombinator> {
     if let Some(first) = enums.iter().find_map(|e| e.type_annotation.as_ref()) {
-        first.clone()
+        Some(first.clone())
     } else {
         infer_enum_type(enums)
     }
 }
 
+fn require_enum_type(
+    enums: &[Enum],
+    span: Span,
+    source: (&str, &Source),
+) -> Result<IntCombinator, VestError> {
+    resolve_enum_type(enums).ok_or_else(|| {
+        report_error(
+            source,
+            span,
+            "enum values exceed the supported integer range",
+        )
+    })
+}
+
 /// 1. if no negative values, use Unsigned
 /// 2. infer the smallest possible type (e.g. if all values are in the range of u8, use u8)
 /// 3. for now, support up to u64 and i64
-pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
+fn infer_enum_type(enums: &[Enum]) -> Option<IntCombinator> {
     let (min, max) = enums
         .iter()
         .fold((i128::MAX, i128::MIN), |(min, max), Enum { value, .. }| {
             (min.min(*value), max.max(*value))
         });
 
-    if min >= 0 {
+    Some(if min >= 0 {
         if max <= u8::MAX.into() {
             IntCombinator::Unsigned(8)
         } else if max <= u16::MAX.into() {
@@ -2767,7 +2835,7 @@ pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
         } else if max <= u64::MAX.into() {
             IntCombinator::Unsigned(64)
         } else {
-            panic!("Enum values are out of range");
+            return None;
         }
     } else if min >= i8::MIN.into() && max <= i8::MAX.into() {
         IntCombinator::Signed(8)
@@ -2778,8 +2846,8 @@ pub fn infer_enum_type(enums: &[Enum]) -> IntCombinator {
     } else if min >= i64::MIN.into() && max <= i64::MAX.into() {
         IntCombinator::Signed(64)
     } else {
-        panic!("Enum values are out of range");
-    }
+        return None;
+    })
 }
 
 fn check_wrap_combinator<'ast>(
@@ -2897,7 +2965,7 @@ fn bit_field_combinator_width(
                         EnumCombinator::Exhaustive { enums, .. }
                         | EnumCombinator::NonExhaustive { enums, .. } => enums,
                     };
-                    let backing = resolve_enum_type(enums);
+                    let backing = resolve_enum_type(enums)?;
                     Some(backing.logical_width() as usize)
                 }
                 _ => None,
@@ -3011,8 +3079,7 @@ fn check_bits_combinator<'ast>(
                 check_combinator_invocation(inv, param_defns, local_ctx, global_ctx, source, true)?;
                 let resolved = global_ctx
                     .combinators
-                    .iter()
-                    .find(|sig| sig.name == inv.func)
+                    .get(inv.func.name.as_str())
                     .map(|sig| &sig.resolved_combinator);
                 match resolved {
                     Some(CombinatorInner::Enum(enum_comb)) => {
@@ -3020,7 +3087,15 @@ fn check_bits_combinator<'ast>(
                             EnumCombinator::Exhaustive { enums, .. }
                             | EnumCombinator::NonExhaustive { enums, .. } => enums,
                         };
-                        let backing = resolve_enum_type(enums);
+                        if enums.iter().any(|variant| &variant.name == label) {
+                            return report_invalid_binding_name(
+                                label,
+                                "field",
+                                "this name conflicts with a variant of the field's enum type",
+                                source,
+                            );
+                        }
+                        let backing = require_enum_type(enums, *field_span, source)?;
                         if !matches!(backing, IntCombinator::Unsigned(_)) {
                             Report::build(ReportKind::Error, (source.0, span_as_range(field_span)))
                                 .with_message("invalid bitfield member")
@@ -3144,8 +3219,7 @@ fn check_constraint_enum_combinator<'ast>(
     // Resolve the invocation target
     let resolved = global_ctx
         .combinators
-        .iter()
-        .find(|sig| sig.name == combinator.func)
+        .get(combinator.func.name.as_str())
         .map(|sig| &sig.resolved_combinator);
     match resolved {
         Some(CombinatorInner::Enum(enum_comb)) => {

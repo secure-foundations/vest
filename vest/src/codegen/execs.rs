@@ -1382,7 +1382,7 @@ impl<'a> Analysis<'a> {
                                                     (#ty::#known_ident, #exec_ident::#variant_ident(v)) => #prep_expr,
                                                 }));
                                             }
-                                            if let EnumCombinator::NonExhaustive { enums, inferred } = ec {
+                                            if let EnumCombinator::NonExhaustive { enums, inferred, .. } = ec {
                                                 let disjuncts: Vec<TokenStream> = enums
                                                     .iter()
                                                     .map(|variant| {
@@ -2102,7 +2102,7 @@ impl<'a> Analysis<'a> {
                         let len_expr = self.render_length_expr_with(
                             len,
                             &|name| self.resolve_dep_for_mode(name, param_defns, mode),
-                            None,
+                            TypeMode::Exec,
                         );
                         quote! { RepeatN(#len_expr, #inner_expr) }
                     }
@@ -2117,7 +2117,7 @@ impl<'a> Analysis<'a> {
                     let len_expr = self.render_length_expr_with(
                         &bytes.len,
                         &|name| self.resolve_dep_for_mode(name, param_defns, mode),
-                        None,
+                        TypeMode::Exec,
                     );
                     quote! { Varied(#len_expr) }
                 }
@@ -2151,7 +2151,7 @@ impl<'a> Analysis<'a> {
                     self.render_length_expr_with(
                         &bytes.len,
                         &|name| self.resolve_dep_for_mode(name, param_defns, mode),
-                        None,
+                        TypeMode::Exec,
                     )
                 };
                 let inner_expr = self.render_exec_combinator_expr_impl(
@@ -2466,6 +2466,8 @@ fn enum_parts(
 ) -> (&[crate::vestir::Enum], bool, &crate::vestir::IntCombinator) {
     match comb {
         EnumCombinator::Exhaustive { enums, inferred } => (enums.as_slice(), true, inferred),
-        EnumCombinator::NonExhaustive { enums, inferred } => (enums.as_slice(), false, inferred),
+        EnumCombinator::NonExhaustive {
+            enums, inferred, ..
+        } => (enums.as_slice(), false, inferred),
     }
 }
