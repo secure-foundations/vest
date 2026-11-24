@@ -47,6 +47,7 @@ impl<I, Inner> Parser<I> for super::Star<Inner> where I: InputBuf, Inner: Parser
         0
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -117,6 +118,7 @@ impl<I, A, B> Parser<I> for super::Repeat<A, B> where
         self.1.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -143,6 +145,7 @@ impl<I, Inner, N> Parser<I> for super::RepeatN<Inner, N> where
         self.0.get().saturating_mul(self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()
@@ -233,6 +236,7 @@ impl<I, Inner, const N: usize> Parser<I> for super::Array<N, Inner> where
         N.saturating_mul(self.0.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -408,6 +412,7 @@ impl<Output: OutputBuf, Inner, T> Serializer<Output, [T]> for super::Star<Inner>
 }
 
 impl<Inner, T> ByteLen<[T]> for super::Star<Inner> where Inner: ByteLen<T>, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -418,6 +423,7 @@ impl<Inner, T> ByteLen<[T]> for super::Star<Inner> where Inner: ByteLen<T>, T: D
 }
 
 impl<Inner, T> Prepare<[T]> for super::Star<Inner> where Inner: Prepare<T>, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -456,6 +462,7 @@ impl<A, B, TA, TB> ByteLen<(&[TA], TB)> for super::Repeat<A, B> where
     TA: DeepView,
     TB: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -474,6 +481,7 @@ impl<A, B, TA, TB> Prepare<(&[TA], TB)> for super::Repeat<A, B> where
     TA: DeepView,
     TB: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -511,6 +519,7 @@ impl<Inner, N, T> ByteLen<[T]> for super::RepeatN<Inner, N> where
     T: DeepView,
     N: AsLen,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -525,6 +534,7 @@ impl<Inner, N, T> Prepare<[T]> for super::RepeatN<Inner, N> where
     T: DeepView,
     N: AsLen,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -558,6 +568,7 @@ impl<Inner, T, const N: usize> ByteLen<[T; N]> for super::Array<N, Inner> where
     Inner: ByteLen<T>,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -571,6 +582,7 @@ impl<Inner, T, const N: usize> Prepare<[T; N]> for super::Array<N, Inner> where
     Inner: Prepare<T>,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }

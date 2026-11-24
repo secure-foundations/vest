@@ -42,6 +42,7 @@ impl<T, Exec, Spec> FnPred<T, Exec, Spec> where
     Spec: SpecPred<T::V>,
  {
     #[verifier::type_invariant]
+    #[verifier::prophetic]
     spec fn wf(&self) -> bool {
         &&& forall|v: &T| #[trigger] call_requires(self.exec_fn, (v,))
         &&& forall|v: &T, ok: bool| #[trigger]
@@ -119,6 +120,7 @@ impl<I: DeepView, O: DeepView, Exec: Fn(I) -> O, Spec: SpecMap<Input = I::V, Out
     Spec,
 > {
     #[verifier::type_invariant]
+    #[verifier::prophetic]
     spec fn wf(&self) -> bool {
         &&& forall|i: I| #[trigger] call_requires(self.exec_fn, (i,))
         &&& forall|i: I, o: O| #[trigger]
@@ -321,6 +323,7 @@ impl<I, O, Spec, Exec> Parser<I> for FnParser<I, O, Spec, Exec> where
  {
     type PT = O;
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| #[trigger] call_requires(self.exec_fn, (i,))
         &&& forall|i: &I, r: PResult<O>| #[trigger]
@@ -525,6 +528,7 @@ impl<T, Spec, Exec> Prepare<T> for FnPrepare<T, Spec, Exec> where
     Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T) -> Result<usize, PreSerializeError>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& forall|value: &T| #[trigger] call_requires(self.exec_fn, (value,))
         &&& forall|value: &T, result: Result<usize, PreSerializeError>| #[trigger]
@@ -602,6 +606,7 @@ impl<T, Spec, Exec> ByteLen<T> for FnByteLen<T, Spec, Exec> where
     Spec: SpecByteLen<T = T::V> + Consistency<Val = T::V>,
     Exec: Fn(&T) -> usize,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& forall|value: &T|
             self.spec_fn@.byte_len(value.deep_view()) <= usize::MAX ==> #[trigger] call_requires(

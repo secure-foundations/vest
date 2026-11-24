@@ -336,6 +336,7 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceOfFmt<C> where
         2
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()
@@ -403,6 +404,7 @@ impl<C, T> Prepare<&[T]> for BerSequenceOfFmt<C> where
     C: SpecCombinator + Prepare<T> + Copy,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as Prepare<T>>::exec_inv(&self.1)
     }
@@ -428,6 +430,7 @@ impl<C, T> ByteLen<&[T]> for BerSequenceOfFmt<C> where
     C: SpecCombinator + ByteLen<T> + Copy,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as ByteLen<T>>::exec_inv(&self.1)
     }
@@ -469,6 +472,7 @@ impl<C, T> Prepare<Vec<T>> for BerSequenceOfFmt<C> where
     C: SpecCombinator + Prepare<T> + Copy,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as Prepare<T>>::exec_inv(&self.1)
     }
@@ -495,6 +499,7 @@ impl<C, T> ByteLen<Vec<T>> for BerSequenceOfFmt<C> where
     C: SpecCombinator + ByteLen<T> + Copy,
     T: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as ByteLen<T>>::exec_inv(&self.1)
     }

@@ -19,6 +19,7 @@ impl<I, A> Parser<I> for super::Opt<A> where I: View<V = Seq<u8>>, A: Parser<I> 
         0
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -55,6 +56,7 @@ impl<Output: OutputBuf, A, T> Serializer<Output, Option<T>> for super::Opt<A> wh
 }
 
 impl<A, T> ByteLen<Option<T>> for super::Opt<A> where T: DeepView, A: ByteLen<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -68,6 +70,7 @@ impl<A, T> ByteLen<Option<T>> for super::Opt<A> where T: DeepView, A: ByteLen<T>
 }
 
 impl<A, T> Prepare<Option<T>> for super::Opt<A> where T: DeepView, A: Prepare<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -92,6 +95,7 @@ impl<I, A, B> Parser<I> for super::Optional<A, B> where
         self.1.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -125,6 +129,7 @@ impl<A, B, TA, TB> ByteLen<(Option<TA>, TB)> for super::Optional<A, B> where
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -141,6 +146,7 @@ impl<A, B, TA, TB> Prepare<(Option<TA>, TB)> for super::Optional<A, B> where
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()

@@ -211,6 +211,7 @@ impl PreSerializeError {
 /// on a value whose consistency has not already been established.
 pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: DeepView + ?Sized {
     /// Extra invariant required by the executable preparation implementation.
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         true
     }
@@ -235,6 +236,7 @@ pub trait Prepare<T>: SpecByteLen<T = T::V> + Consistency<Val = T::V> where T: D
 /// predicate. Use `Prepare::prepare` for untrusted or newly constructed values.
 pub trait ByteLen<T> where Self: SpecByteLen<T = T::V>, T: DeepView + ?Sized {
     /// Extra invariant required by the executable length implementation.
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         true
     }
@@ -250,6 +252,7 @@ pub trait ByteLen<T> where Self: SpecByteLen<T = T::V>, T: DeepView + ?Sized {
 }
 
 impl<T: ?Sized, S> Prepare<T> for &S where T: DeepView, S: Prepare<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }
@@ -260,6 +263,7 @@ impl<T: ?Sized, S> Prepare<T> for &S where T: DeepView, S: Prepare<T> {
 }
 
 impl<T: ?Sized, S> ByteLen<T> for &S where T: DeepView, S: ByteLen<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }

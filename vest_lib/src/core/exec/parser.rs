@@ -36,6 +36,7 @@ pub trait Parser<Input: View<V = Seq<u8>>>: SpecParser {
     ///
     /// Most formats leave this as `true`; functional and recursive
     /// parser callbacks use it to connect executable code to their specifications.
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         true
     }
@@ -95,6 +96,7 @@ impl<I, T, Spec, Exec> Parser<I> for (Spec, Exec) where
  {
     type PT = T;
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& forall|i: &I| call_requires(self.1, (i,))
         &&& forall|i: &I, r: PResult<T>|
@@ -158,6 +160,7 @@ impl<P: Productive> Productive for &P {
 impl<I, P> Parser<I> for &P where I: View<V = Seq<u8>>, P: Parser<I> {
     type PT = P::PT;
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         (*self).exec_inv()
     }

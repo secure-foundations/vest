@@ -364,6 +364,7 @@ impl<Input, F> Parser<Input> for ImplicitlyTaggedFmt<F> where
  {
     type PT = <F as Parser<Input>>::PT;
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <F as Parser<Input>>::exec_inv(&self.1.spec_retagged(self.0))
     }
@@ -392,6 +393,7 @@ impl<F, T> Prepare<T> for ImplicitlyTaggedFmt<F> where
     T: DeepView + ?Sized,
     F: Retaggable + Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <F as Prepare<T>>::exec_inv(&self.1.spec_retagged(self.0))
     }
@@ -405,6 +407,7 @@ impl<F, T> ByteLen<T> for ImplicitlyTaggedFmt<F> where
     T: DeepView + ?Sized,
     F: Retaggable + ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <F as ByteLen<T>>::exec_inv(&self.1.spec_retagged(self.0))
     }
@@ -898,6 +901,7 @@ impl<I, Field, Rest, const DER: bool> Parser<I> for DefaultedFmt<Field, Field::T
  {
     type PT = (Field::PT, Rest::PT);
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -967,6 +971,7 @@ impl<Field, Default, Rest, R, const DER: bool> Prepare<(Default, R)> for Default
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
     R: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
@@ -996,6 +1001,7 @@ impl<Field, Default, Rest, R, const DER: bool> ByteLen<(Default, R)> for Default
     Default: DeepView<V = Default> + PartialEq + Structural + Copy,
     R: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()

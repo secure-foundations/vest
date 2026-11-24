@@ -19,6 +19,7 @@ impl<I, Inner> Parser<I> for super::Cond<Inner> where I: View<V = Seq<u8>>, Inne
         0
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -47,6 +48,7 @@ impl<Output: OutputBuf, Inner, T> Serializer<Output, T> for super::Cond<Inner> w
 }
 
 impl<T, Inner> ByteLen<T> for super::Cond<Inner> where T: DeepView, Inner: ByteLen<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -57,6 +59,7 @@ impl<T, Inner> ByteLen<T> for super::Cond<Inner> where T: DeepView, Inner: ByteL
 }
 
 impl<T, Inner> Prepare<T> for super::Cond<Inner> where T: DeepView, Inner: Prepare<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }

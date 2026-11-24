@@ -638,6 +638,7 @@ impl<'i, C> Parser<&'i [u8]> for SetOfFmt<C> where
  {
     type PT = Vec<C::PT>;
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -720,6 +721,7 @@ impl<C, Elem> ByteLen<[Elem]> for SetOfFmt<C> where
     C: SpecByteLen<T = <Elem as DeepView>::V> + ByteLen<Elem> + Copy,
     Elem: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -733,6 +735,7 @@ impl<C, Elem> Prepare<[Elem]> for SetOfFmt<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Prepare<Elem> + DerOrd<Elem> + Copy,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -804,6 +807,7 @@ impl<C, Elem> ByteLen<Vec<Elem>> for SetOfFmt<C> where
     C: SpecByteLen<T = <Elem as DeepView>::V> + ByteLen<Elem> + Copy,
     Elem: DeepView,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -818,6 +822,7 @@ impl<C, Elem> Prepare<Vec<Elem>> for SetOfFmt<C> where
     Elem: DeepView,
     C: SpecCombinator<T = <Elem as DeepView>::V> + Prepare<Elem> + DerOrd<Elem> + Copy,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }

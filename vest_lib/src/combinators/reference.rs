@@ -221,6 +221,7 @@ impl<I, Inner> Parser<I> for Ref<Inner> where I: View<V = Seq<u8>>, Inner: Parse
         self.0.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -246,6 +247,7 @@ impl<Output, Inner, T> Serializer<Output, &T> for Ref<Inner> where
 }
 
 impl<Inner, T> Prepare<&T> for Ref<Inner> where T: DeepView + ?Sized, Inner: Prepare<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -256,6 +258,7 @@ impl<Inner, T> Prepare<&T> for Ref<Inner> where T: DeepView + ?Sized, Inner: Pre
 }
 
 impl<Inner, T> ByteLen<&T> for Ref<Inner> where T: DeepView + ?Sized, Inner: ByteLen<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
