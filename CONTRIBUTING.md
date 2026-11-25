@@ -157,8 +157,10 @@ of each supported platform archive. Then run the full verification matrix, since
 Verus upgrades can change proof results and performance.
 Update the getting-started guide's compiler, library, `vstd`, and release-tag
 pins together with the release version bump.
-The release also bundles `verusdoc`; `scripts/build-docs.sh` uses it to rebuild
-the library's specifications and proofs alongside the guide.
+To rebuild the library API docs alongside the guide, run `scripts/build-docs.sh`.
+If the Verus release does not include `verusdoc`, run
+`cargo build --locked -p verusdoc` in the matching Verus checkout's `source/`
+directory, then set `VERUS` to that directory or `VERUSDOC_BIN` to the built binary.
 
 **Releasing.** Publish only from `main`, and tag with the exact manifest
 version: `vest_lib-vVERSION` or `vest-vVERSION`. The release workflow refuses a

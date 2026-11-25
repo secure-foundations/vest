@@ -18,7 +18,7 @@ license = "MIT"
 repository = "https://github.com/secure-foundations/vest"
 
 [workspace.dependencies]
-vstd = { version = "=0.0.0-2026-10-25-0158", default-features = false }
+vstd = { version = "=0.0.0-2026-11-22-0344", default-features = false }
 vest_lib = { path = "vest_lib", default-features = false }
 
 [profile.bench]

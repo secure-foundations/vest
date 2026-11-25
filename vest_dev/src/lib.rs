@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 

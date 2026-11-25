@@ -25,11 +25,13 @@ if [[ -n "${VERUSDOC_BIN:-}" ]]; then
     verusdoc_bin="$VERUSDOC_BIN"
 elif [[ -x "$verus_bin_dir/verusdoc" ]]; then
     verusdoc_bin="$verus_bin_dir/verusdoc"
+elif [[ -n "${VERUS:-}" && -x "$VERUS/target/debug/verusdoc" ]]; then
+    verusdoc_bin="$VERUS/target/debug/verusdoc"
 elif [[ -n "${VERUS:-}" && -x "$VERUS/target-verus/debug/verusdoc" ]]; then
     verusdoc_bin="$VERUS/target-verus/debug/verusdoc"
 else
     echo "error: set VERUSDOC_BIN to a verusdoc executable" >&2
-    echo "use the pinned release, or build it from the matching Verus source with: cargo build -p verusdoc" >&2
+    echo "build it in the matching Verus source/ directory with: cargo build --locked -p verusdoc" >&2
     exit 1
 fi
 
@@ -76,7 +78,6 @@ rustup run "$toolchain" rustdoc \
     -Zcrate-attr='feature(register_tool)' \
     -Zcrate-attr='feature(rustc_attrs)' \
     -Zcrate-attr='feature(unboxed_closures)' \
-    -Zcrate-attr='feature(never_type)' \
     -Zcrate-attr='register_tool(verus)' \
     -Zcrate-attr='register_tool(verifier)' \
     -Zcrate-attr='register_tool(verusfmt)' \

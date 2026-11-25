@@ -21,7 +21,6 @@
 //! gentle introductions.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(verus_only, feature(never_type))]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 // Enable once proof-internal helper items are hidden from the public rustdoc surface.
