@@ -364,654 +364,660 @@
 <a href=#364 id=364 data-nosnippet>364</a> {
 <a href=#365 id=365 data-nosnippet>365</a>    <span class="kw">type </span>PT = &lt;F <span class="kw">as </span>Parser&lt;Input&gt;&gt;::PT;
 <a href=#366 id=366 data-nosnippet>366</a>
-<a href=#367 id=367 data-nosnippet>367</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#368 id=368 data-nosnippet>368</a>        &lt;F <span class="kw">as </span>Parser&lt;Input&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
-<a href=#369 id=369 data-nosnippet>369</a>    }
-<a href=#370 id=370 data-nosnippet>370</a>
-<a href=#371 id=371 data-nosnippet>371</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: <span class="kw-2">&amp;</span>Input) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).parse(ibuf)
-<a href=#373 id=373 data-nosnippet>373</a>    }
-<a href=#374 id=374 data-nosnippet>374</a>}
-<a href=#375 id=375 data-nosnippet>375</a>
-<a href=#376 id=376 data-nosnippet>376</a><span class="kw">impl</span>&lt;Output, F, T&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
-<a href=#377 id=377 data-nosnippet>377</a>    </span>Output: OutputBuf,
-<a href=#378 id=378 data-nosnippet>378</a>    T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#379 id=379 data-nosnippet>379</a>    F: Retaggable + Serializer&lt;Output, T&gt;,
-<a href=#380 id=380 data-nosnippet>380</a> {
-<a href=#381 id=381 data-nosnippet>381</a>    <span class="attr">#[verifier::prophetic]
-<a href=#382 id=382 data-nosnippet>382</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#383 id=383 data-nosnippet>383</a>        &lt;F <span class="kw">as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
-<a href=#384 id=384 data-nosnippet>384</a>    }
-<a href=#385 id=385 data-nosnippet>385</a>
-<a href=#386 id=386 data-nosnippet>386</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#387 id=387 data-nosnippet>387</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).serialize_into(value, obuf)
-<a href=#388 id=388 data-nosnippet>388</a>    }
-<a href=#389 id=389 data-nosnippet>389</a>}
-<a href=#390 id=390 data-nosnippet>390</a>
-<a href=#391 id=391 data-nosnippet>391</a><span class="kw">impl</span>&lt;F, T&gt; Prepare&lt;T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
-<a href=#392 id=392 data-nosnippet>392</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#393 id=393 data-nosnippet>393</a>    F: Retaggable + Prepare&lt;T&gt;,
-<a href=#394 id=394 data-nosnippet>394</a> {
-<a href=#395 id=395 data-nosnippet>395</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#396 id=396 data-nosnippet>396</a>        &lt;F <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
-<a href=#397 id=397 data-nosnippet>397</a>    }
-<a href=#398 id=398 data-nosnippet>398</a>
-<a href=#399 id=399 data-nosnippet>399</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#400 id=400 data-nosnippet>400</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).prepare(value)
-<a href=#401 id=401 data-nosnippet>401</a>    }
-<a href=#402 id=402 data-nosnippet>402</a>}
-<a href=#403 id=403 data-nosnippet>403</a>
-<a href=#404 id=404 data-nosnippet>404</a><span class="kw">impl</span>&lt;F, T&gt; ByteLen&lt;T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
-<a href=#405 id=405 data-nosnippet>405</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#406 id=406 data-nosnippet>406</a>    F: Retaggable + ByteLen&lt;T&gt;,
-<a href=#407 id=407 data-nosnippet>407</a> {
-<a href=#408 id=408 data-nosnippet>408</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#409 id=409 data-nosnippet>409</a>        &lt;F <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
-<a href=#410 id=410 data-nosnippet>410</a>    }
-<a href=#411 id=411 data-nosnippet>411</a>
-<a href=#412 id=412 data-nosnippet>412</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
-<a href=#413 id=413 data-nosnippet>413</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).length(value)
-<a href=#414 id=414 data-nosnippet>414</a>    }
-<a href=#415 id=415 data-nosnippet>415</a>}
-<a href=#416 id=416 data-nosnippet>416</a>
-<a href=#417 id=417 data-nosnippet>417</a><span class="doccomment">/// Rule-independent format type produced by ASN.1 IMPLICIT tagging.
-<a href=#418 id=418 data-nosnippet>418</a></span><span class="kw">pub type </span>ImplicitFmt&lt;F&gt; = ImplicitlyTaggedFmt&lt;F&gt;;
+<a href=#367 id=367 data-nosnippet>367</a>    <span class="attr">#[verifier::prophetic]
+<a href=#368 id=368 data-nosnippet>368</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#369 id=369 data-nosnippet>369</a>        &lt;F <span class="kw">as </span>Parser&lt;Input&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
+<a href=#370 id=370 data-nosnippet>370</a>    }
+<a href=#371 id=371 data-nosnippet>371</a>
+<a href=#372 id=372 data-nosnippet>372</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: <span class="kw-2">&amp;</span>Input) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#373 id=373 data-nosnippet>373</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).parse(ibuf)
+<a href=#374 id=374 data-nosnippet>374</a>    }
+<a href=#375 id=375 data-nosnippet>375</a>}
+<a href=#376 id=376 data-nosnippet>376</a>
+<a href=#377 id=377 data-nosnippet>377</a><span class="kw">impl</span>&lt;Output, F, T&gt; Serializer&lt;Output, T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
+<a href=#378 id=378 data-nosnippet>378</a>    </span>Output: OutputBuf,
+<a href=#379 id=379 data-nosnippet>379</a>    T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#380 id=380 data-nosnippet>380</a>    F: Retaggable + Serializer&lt;Output, T&gt;,
+<a href=#381 id=381 data-nosnippet>381</a> {
+<a href=#382 id=382 data-nosnippet>382</a>    <span class="attr">#[verifier::prophetic]
+<a href=#383 id=383 data-nosnippet>383</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#384 id=384 data-nosnippet>384</a>        &lt;F <span class="kw">as </span>Serializer&lt;Output, T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
+<a href=#385 id=385 data-nosnippet>385</a>    }
+<a href=#386 id=386 data-nosnippet>386</a>
+<a href=#387 id=387 data-nosnippet>387</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T, obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#388 id=388 data-nosnippet>388</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).serialize_into(value, obuf)
+<a href=#389 id=389 data-nosnippet>389</a>    }
+<a href=#390 id=390 data-nosnippet>390</a>}
+<a href=#391 id=391 data-nosnippet>391</a>
+<a href=#392 id=392 data-nosnippet>392</a><span class="kw">impl</span>&lt;F, T&gt; Prepare&lt;T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
+<a href=#393 id=393 data-nosnippet>393</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#394 id=394 data-nosnippet>394</a>    F: Retaggable + Prepare&lt;T&gt;,
+<a href=#395 id=395 data-nosnippet>395</a> {
+<a href=#396 id=396 data-nosnippet>396</a>    <span class="attr">#[verifier::prophetic]
+<a href=#397 id=397 data-nosnippet>397</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#398 id=398 data-nosnippet>398</a>        &lt;F <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
+<a href=#399 id=399 data-nosnippet>399</a>    }
+<a href=#400 id=400 data-nosnippet>400</a>
+<a href=#401 id=401 data-nosnippet>401</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#402 id=402 data-nosnippet>402</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).prepare(value)
+<a href=#403 id=403 data-nosnippet>403</a>    }
+<a href=#404 id=404 data-nosnippet>404</a>}
+<a href=#405 id=405 data-nosnippet>405</a>
+<a href=#406 id=406 data-nosnippet>406</a><span class="kw">impl</span>&lt;F, T&gt; ByteLen&lt;T&gt; <span class="kw">for </span>ImplicitlyTaggedFmt&lt;F&gt; <span class="kw">where
+<a href=#407 id=407 data-nosnippet>407</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#408 id=408 data-nosnippet>408</a>    F: Retaggable + ByteLen&lt;T&gt;,
+<a href=#409 id=409 data-nosnippet>409</a> {
+<a href=#410 id=410 data-nosnippet>410</a>    <span class="attr">#[verifier::prophetic]
+<a href=#411 id=411 data-nosnippet>411</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#412 id=412 data-nosnippet>412</a>        &lt;F <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>.spec_retagged(<span class="self">self</span>.<span class="number">0</span>))
+<a href=#413 id=413 data-nosnippet>413</a>    }
+<a href=#414 id=414 data-nosnippet>414</a>
+<a href=#415 id=415 data-nosnippet>415</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
+<a href=#416 id=416 data-nosnippet>416</a>        <span class="self">self</span>.<span class="number">1</span>.retagged(<span class="self">self</span>.<span class="number">0</span>).length(value)
+<a href=#417 id=417 data-nosnippet>417</a>    }
+<a href=#418 id=418 data-nosnippet>418</a>}
 <a href=#419 id=419 data-nosnippet>419</a>
-<a href=#420 id=420 data-nosnippet>420</a><span class="doccomment">/// Apply an ASN.1 IMPLICIT tag with an arbitrary tag class.
-<a href=#421 id=421 data-nosnippet>421</a>///
-<a href=#422 id=422 data-nosnippet>422</a>/// The supplied tag's constructed bit is only a placeholder: the concrete [`Retaggable`]
-<a href=#423 id=423 data-nosnippet>423</a>/// implementation preserves or selects the encoding form required by the base format.
-<a href=#424 id=424 data-nosnippet>424</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#425 id=425 data-nosnippet>425</a>#[verifier::allow_in_spec]
-<a href=#426 id=426 data-nosnippet>426</a></span><span class="kw">pub const fn </span>implicitly_tagged&lt;C: Copy&gt;(class: Class, number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
-<a href=#427 id=427 data-nosnippet>427</a>    returns
-<a href=#428 id=428 data-nosnippet>428</a>        ImplicitlyTaggedFmt(
-<a href=#429 id=429 data-nosnippet>429</a>            Tag { class, constructed: <span class="bool-val">false</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) },
-<a href=#430 id=430 data-nosnippet>430</a>            inner,
-<a href=#431 id=431 data-nosnippet>431</a>        ),
-<a href=#432 id=432 data-nosnippet>432</a>{
-<a href=#433 id=433 data-nosnippet>433</a>    ImplicitlyTaggedFmt(
-<a href=#434 id=434 data-nosnippet>434</a>        Tag { class, constructed: <span class="bool-val">false</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) },
-<a href=#435 id=435 data-nosnippet>435</a>        inner,
-<a href=#436 id=436 data-nosnippet>436</a>    )
-<a href=#437 id=437 data-nosnippet>437</a>}
-<a href=#438 id=438 data-nosnippet>438</a>
-<a href=#439 id=439 data-nosnippet>439</a><span class="doccomment">/// Apply a context-specific ASN.1 IMPLICIT tag.
-<a href=#440 id=440 data-nosnippet>440</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#441 id=441 data-nosnippet>441</a>#[verifier::allow_in_spec]
-<a href=#442 id=442 data-nosnippet>442</a></span><span class="kw">pub const fn </span>IMPLICIT&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
-<a href=#443 id=443 data-nosnippet>443</a>    returns
-<a href=#444 id=444 data-nosnippet>444</a>        implicitly_tagged(Class::ContextSpecific, number, inner),
-<a href=#445 id=445 data-nosnippet>445</a>{
-<a href=#446 id=446 data-nosnippet>446</a>    implicitly_tagged(Class::ContextSpecific, number, inner)
-<a href=#447 id=447 data-nosnippet>447</a>}
-<a href=#448 id=448 data-nosnippet>448</a>
-<a href=#449 id=449 data-nosnippet>449</a><span class="doccomment">/// Apply an application-class ASN.1 IMPLICIT tag.
-<a href=#450 id=450 data-nosnippet>450</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#451 id=451 data-nosnippet>451</a>#[verifier::allow_in_spec]
-<a href=#452 id=452 data-nosnippet>452</a></span><span class="kw">pub const fn </span>IMPLICIT_APPLICATION&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
-<a href=#453 id=453 data-nosnippet>453</a>    returns
-<a href=#454 id=454 data-nosnippet>454</a>        implicitly_tagged(Class::Application, number, inner),
-<a href=#455 id=455 data-nosnippet>455</a>{
-<a href=#456 id=456 data-nosnippet>456</a>    implicitly_tagged(Class::Application, number, inner)
-<a href=#457 id=457 data-nosnippet>457</a>}
-<a href=#458 id=458 data-nosnippet>458</a>
-<a href=#459 id=459 data-nosnippet>459</a><span class="doccomment">/// Apply a private-class ASN.1 IMPLICIT tag.
-<a href=#460 id=460 data-nosnippet>460</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#461 id=461 data-nosnippet>461</a>#[verifier::allow_in_spec]
-<a href=#462 id=462 data-nosnippet>462</a></span><span class="kw">pub const fn </span>IMPLICIT_PRIVATE&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
-<a href=#463 id=463 data-nosnippet>463</a>    returns
-<a href=#464 id=464 data-nosnippet>464</a>        implicitly_tagged(Class::Private, number, inner),
-<a href=#465 id=465 data-nosnippet>465</a>{
-<a href=#466 id=466 data-nosnippet>466</a>    implicitly_tagged(Class::Private, number, inner)
-<a href=#467 id=467 data-nosnippet>467</a>}
-<a href=#468 id=468 data-nosnippet>468</a>
-<a href=#469 id=469 data-nosnippet>469</a><span class="doccomment">/// Construct an ASN.1 OPTIONAL component with its continuation.
-<a href=#470 id=470 data-nosnippet>470</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#471 id=471 data-nosnippet>471</a>#[verifier::allow_in_spec]
-<a href=#472 id=472 data-nosnippet>472</a></span><span class="kw">pub const fn </span>OPTIONAL&lt;Field, Rest&gt;(field: Field, rest: Rest) -&gt; Optional&lt;Field, Rest&gt;
-<a href=#473 id=473 data-nosnippet>473</a>    returns
-<a href=#474 id=474 data-nosnippet>474</a>        Optional(field, rest),
-<a href=#475 id=475 data-nosnippet>475</a>{
-<a href=#476 id=476 data-nosnippet>476</a>    Optional(field, rest)
-<a href=#477 id=477 data-nosnippet>477</a>}
-<a href=#478 id=478 data-nosnippet>478</a>
-<a href=#479 id=479 data-nosnippet>479</a><span class="doccomment">/// Construct a required ASN.1 component with its continuation.
-<a href=#480 id=480 data-nosnippet>480</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#481 id=481 data-nosnippet>481</a>#[verifier::allow_in_spec]
-<a href=#482 id=482 data-nosnippet>482</a></span><span class="kw">pub const fn </span>REQUIRED&lt;Field, Rest&gt;(field: Field, rest: Rest) -&gt; Pair&lt;Field, Rest&gt;
-<a href=#483 id=483 data-nosnippet>483</a>    returns
-<a href=#484 id=484 data-nosnippet>484</a>        Pair(field, rest),
-<a href=#485 id=485 data-nosnippet>485</a>{
-<a href=#486 id=486 data-nosnippet>486</a>    Pair(field, rest)
-<a href=#487 id=487 data-nosnippet>487</a>}
-<a href=#488 id=488 data-nosnippet>488</a>
-<a href=#489 id=489 data-nosnippet>489</a><span class="doccomment">/// Construct a binary ASN.1 CHOICE.
-<a href=#490 id=490 data-nosnippet>490</a></span><span class="attr">#[allow(non_snake_case)]
-<a href=#491 id=491 data-nosnippet>491</a>#[verifier::allow_in_spec]
-<a href=#492 id=492 data-nosnippet>492</a></span><span class="kw">pub const fn </span>CHOICE&lt;Left, Right&gt;(left: Left, right: Right) -&gt; Choice&lt;Left, Right&gt;
-<a href=#493 id=493 data-nosnippet>493</a>    returns
-<a href=#494 id=494 data-nosnippet>494</a>        Choice(left, right),
-<a href=#495 id=495 data-nosnippet>495</a>{
-<a href=#496 id=496 data-nosnippet>496</a>    Choice(left, right)
-<a href=#497 id=497 data-nosnippet>497</a>}
-<a href=#498 id=498 data-nosnippet>498</a>
-<a href=#499 id=499 data-nosnippet>499</a><span class="doccomment">/// Construct the outer tag used by ASN.1 EXPLICIT tagging.
-<a href=#500 id=500 data-nosnippet>500</a></span><span class="attr">#[verifier::allow_in_spec]
-<a href=#501 id=501 data-nosnippet>501</a></span><span class="kw">pub const fn </span>explicit_tag(class: Class, number: u64) -&gt; Tag
-<a href=#502 id=502 data-nosnippet>502</a>    returns
-<a href=#503 id=503 data-nosnippet>503</a>        (Tag { class, constructed: <span class="bool-val">true</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) }),
-<a href=#504 id=504 data-nosnippet>504</a>{
-<a href=#505 id=505 data-nosnippet>505</a>    Tag { class, constructed: <span class="bool-val">true</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) }
-<a href=#506 id=506 data-nosnippet>506</a>}
-<a href=#507 id=507 data-nosnippet>507</a>
-<a href=#508 id=508 data-nosnippet>508</a><span class="doccomment">/// ASN.1 DEFAULT component with continuation.
-<a href=#509 id=509 data-nosnippet>509</a>///
-<a href=#510 id=510 data-nosnippet>510</a>/// The semantic value always contains the component value. On parsing, absence
-<a href=#511 id=511 data-nosnippet>511</a>/// is replaced by `default`. On serialization, a value equal to `default` is
-<a href=#512 id=512 data-nosnippet>512</a>/// omitted. DER additionally rejects an explicitly encoded default value.
-<a href=#513 id=513 data-nosnippet>513</a></span><span class="attr">#[derive(Copy)]
-<a href=#514 id=514 data-nosnippet>514</a></span><span class="kw">pub struct </span>DefaultedFmt&lt;Field, Default, Rest, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;(
-<a href=#515 id=515 data-nosnippet>515</a>    <span class="kw">pub </span>Field,
-<a href=#516 id=516 data-nosnippet>516</a>    <span class="kw">pub </span>Default,
-<a href=#517 id=517 data-nosnippet>517</a>    <span class="kw">pub </span>Rest,
-<a href=#518 id=518 data-nosnippet>518</a>);
-<a href=#519 id=519 data-nosnippet>519</a>
-<a href=#520 id=520 data-nosnippet>520</a><span class="doccomment">/// Construct an ASN.1 DEFAULT component for the selected encoding rules.
-<a href=#521 id=521 data-nosnippet>521</a></span><span class="attr">#[verifier::allow_in_spec]
-<a href=#522 id=522 data-nosnippet>522</a></span><span class="kw">pub const fn </span>defaulted&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt;(
-<a href=#523 id=523 data-nosnippet>523</a>    field: Field,
-<a href=#524 id=524 data-nosnippet>524</a>    default: Field::T,
-<a href=#525 id=525 data-nosnippet>525</a>    rest: Rest,
-<a href=#526 id=526 data-nosnippet>526</a>) -&gt; DefaultedFmt&lt;Field, Field::T, Rest, DER&gt; <span class="kw">where </span>Field: SpecByteLen
-<a href=#527 id=527 data-nosnippet>527</a>    returns
-<a href=#528 id=528 data-nosnippet>528</a>        DefaultedFmt::&lt;Field, Field::T, Rest, DER&gt;(field, default, rest),
-<a href=#529 id=529 data-nosnippet>529</a>{
-<a href=#530 id=530 data-nosnippet>530</a>    DefaultedFmt::&lt;Field, Field::T, Rest, DER&gt;(field, default, rest)
-<a href=#531 id=531 data-nosnippet>531</a>}
-<a href=#532 id=532 data-nosnippet>532</a>
-<a href=#533 id=533 data-nosnippet>533</a><span class="kw">impl</span>&lt;Field: Clone, Default: Clone, Rest: Clone, <span class="kw">const </span>DER: bool&gt; Clone <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#534 id=534 data-nosnippet>534</a>    Field,
-<a href=#535 id=535 data-nosnippet>535</a>    Default,
-<a href=#536 id=536 data-nosnippet>536</a>    Rest,
-<a href=#537 id=537 data-nosnippet>537</a>    DER,
-<a href=#538 id=538 data-nosnippet>538</a>&gt; {
-<a href=#539 id=539 data-nosnippet>539</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (cloned: <span class="self">Self</span>)
-<a href=#540 id=540 data-nosnippet>540</a>        ensures
-<a href=#541 id=541 data-nosnippet>541</a>            call_ensures(Field::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,), cloned.<span class="number">0</span>),
-<a href=#542 id=542 data-nosnippet>542</a>            call_ensures(Default::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>,), cloned.<span class="number">1</span>),
-<a href=#543 id=543 data-nosnippet>543</a>            call_ensures(Rest::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">2</span>,), cloned.<span class="number">2</span>),
-<a href=#544 id=544 data-nosnippet>544</a>    {
-<a href=#545 id=545 data-nosnippet>545</a>        DefaultedFmt(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="self">self</span>.<span class="number">1</span>.clone(), <span class="self">self</span>.<span class="number">2</span>.clone())
-<a href=#546 id=546 data-nosnippet>546</a>    }
-<a href=#547 id=547 data-nosnippet>547</a>}
-<a href=#548 id=548 data-nosnippet>548</a>
-<a href=#549 id=549 data-nosnippet>549</a><span class="kw">pub type </span>DefaultedInnerFmt&lt;Field, Rest, T, U, <span class="kw">const </span>DER: bool&gt; = Mapped&lt;
-<a href=#550 id=550 data-nosnippet>550</a>    Refined&lt;Optional&lt;Field, Rest&gt;, PredFnSpec&lt;(<span class="prelude-ty">Option</span>&lt;T&gt;, U)&gt;&gt;,
-<a href=#551 id=551 data-nosnippet>551</a>    FnSpecMapper&lt;(<span class="prelude-ty">Option</span>&lt;T&gt;, U), (T, U)&gt;,
-<a href=#552 id=552 data-nosnippet>552</a>&gt;;
-<a href=#553 id=553 data-nosnippet>553</a>
-<a href=#554 id=554 data-nosnippet>554</a><span class="kw">pub </span>open spec <span class="kw">fn </span>defaulted_fmt&lt;Field: SpecByteLen, Rest: SpecByteLen, <span class="kw">const </span>DER: bool&gt;(
-<a href=#555 id=555 data-nosnippet>555</a>    field: Field,
-<a href=#556 id=556 data-nosnippet>556</a>    default: Field::T,
-<a href=#557 id=557 data-nosnippet>557</a>    rest: Rest,
-<a href=#558 id=558 data-nosnippet>558</a>) -&gt; DefaultedInnerFmt&lt;Field, Rest, Field::T, Rest::T, DER&gt; {
-<a href=#559 id=559 data-nosnippet>559</a>    Mapped {
-<a href=#560 id=560 data-nosnippet>560</a>        inner: Refined(
-<a href=#561 id=561 data-nosnippet>561</a>            Optional(field, rest),
-<a href=#562 id=562 data-nosnippet>562</a>            |(value, <span class="kw">_</span>): (<span class="prelude-ty">Option</span>&lt;Field::T&gt;, Rest::T)|
-<a href=#563 id=563 data-nosnippet>563</a>                DER ==&gt; (value matches <span class="prelude-val">Some</span>(value) ==&gt; value != default),
-<a href=#564 id=564 data-nosnippet>564</a>        ),
-<a href=#565 id=565 data-nosnippet>565</a>        mapper: (
-<a href=#566 id=566 data-nosnippet>566</a>            |(parsed, rest): (<span class="prelude-ty">Option</span>&lt;Field::T&gt;, Rest::T)|
-<a href=#567 id=567 data-nosnippet>567</a>                (
-<a href=#568 id=568 data-nosnippet>568</a>                    <span class="kw">match </span>parsed {
-<a href=#569 id=569 data-nosnippet>569</a>                        <span class="prelude-val">Some</span>(value) =&gt; value,
-<a href=#570 id=570 data-nosnippet>570</a>                        <span class="prelude-val">None </span>=&gt; default,
-<a href=#571 id=571 data-nosnippet>571</a>                    },
-<a href=#572 id=572 data-nosnippet>572</a>                    rest,
-<a href=#573 id=573 data-nosnippet>573</a>                ),
-<a href=#574 id=574 data-nosnippet>574</a>            |(value, rest): (Field::T, Rest::T)|
-<a href=#575 id=575 data-nosnippet>575</a>                (
-<a href=#576 id=576 data-nosnippet>576</a>                    <span class="kw">if </span>value == default {
-<a href=#577 id=577 data-nosnippet>577</a>                        <span class="prelude-val">None
-<a href=#578 id=578 data-nosnippet>578</a>                    </span>} <span class="kw">else </span>{
-<a href=#579 id=579 data-nosnippet>579</a>                        <span class="prelude-val">Some</span>(value)
-<a href=#580 id=580 data-nosnippet>580</a>                    },
-<a href=#581 id=581 data-nosnippet>581</a>                    rest,
-<a href=#582 id=582 data-nosnippet>582</a>                ),
-<a href=#583 id=583 data-nosnippet>583</a>        ),
-<a href=#584 id=584 data-nosnippet>584</a>    }
-<a href=#585 id=585 data-nosnippet>585</a>}
-<a href=#586 id=586 data-nosnippet>586</a>
-<a href=#587 id=587 data-nosnippet>587</a><span class="kw">mod </span>derived_specs {
-<a href=#588 id=588 data-nosnippet>588</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#420 id=420 data-nosnippet>420</a><span class="doccomment">/// Rule-independent format type produced by ASN.1 IMPLICIT tagging.
+<a href=#421 id=421 data-nosnippet>421</a></span><span class="kw">pub type </span>ImplicitFmt&lt;F&gt; = ImplicitlyTaggedFmt&lt;F&gt;;
+<a href=#422 id=422 data-nosnippet>422</a>
+<a href=#423 id=423 data-nosnippet>423</a><span class="doccomment">/// Apply an ASN.1 IMPLICIT tag with an arbitrary tag class.
+<a href=#424 id=424 data-nosnippet>424</a>///
+<a href=#425 id=425 data-nosnippet>425</a>/// The supplied tag's constructed bit is only a placeholder: the concrete [`Retaggable`]
+<a href=#426 id=426 data-nosnippet>426</a>/// implementation preserves or selects the encoding form required by the base format.
+<a href=#427 id=427 data-nosnippet>427</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#428 id=428 data-nosnippet>428</a>#[verifier::allow_in_spec]
+<a href=#429 id=429 data-nosnippet>429</a></span><span class="kw">pub const fn </span>implicitly_tagged&lt;C: Copy&gt;(class: Class, number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
+<a href=#430 id=430 data-nosnippet>430</a>    returns
+<a href=#431 id=431 data-nosnippet>431</a>        ImplicitlyTaggedFmt(
+<a href=#432 id=432 data-nosnippet>432</a>            Tag { class, constructed: <span class="bool-val">false</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) },
+<a href=#433 id=433 data-nosnippet>433</a>            inner,
+<a href=#434 id=434 data-nosnippet>434</a>        ),
+<a href=#435 id=435 data-nosnippet>435</a>{
+<a href=#436 id=436 data-nosnippet>436</a>    ImplicitlyTaggedFmt(
+<a href=#437 id=437 data-nosnippet>437</a>        Tag { class, constructed: <span class="bool-val">false</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) },
+<a href=#438 id=438 data-nosnippet>438</a>        inner,
+<a href=#439 id=439 data-nosnippet>439</a>    )
+<a href=#440 id=440 data-nosnippet>440</a>}
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a><span class="doccomment">/// Apply a context-specific ASN.1 IMPLICIT tag.
+<a href=#443 id=443 data-nosnippet>443</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#444 id=444 data-nosnippet>444</a>#[verifier::allow_in_spec]
+<a href=#445 id=445 data-nosnippet>445</a></span><span class="kw">pub const fn </span>IMPLICIT&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
+<a href=#446 id=446 data-nosnippet>446</a>    returns
+<a href=#447 id=447 data-nosnippet>447</a>        implicitly_tagged(Class::ContextSpecific, number, inner),
+<a href=#448 id=448 data-nosnippet>448</a>{
+<a href=#449 id=449 data-nosnippet>449</a>    implicitly_tagged(Class::ContextSpecific, number, inner)
+<a href=#450 id=450 data-nosnippet>450</a>}
+<a href=#451 id=451 data-nosnippet>451</a>
+<a href=#452 id=452 data-nosnippet>452</a><span class="doccomment">/// Apply an application-class ASN.1 IMPLICIT tag.
+<a href=#453 id=453 data-nosnippet>453</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#454 id=454 data-nosnippet>454</a>#[verifier::allow_in_spec]
+<a href=#455 id=455 data-nosnippet>455</a></span><span class="kw">pub const fn </span>IMPLICIT_APPLICATION&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
+<a href=#456 id=456 data-nosnippet>456</a>    returns
+<a href=#457 id=457 data-nosnippet>457</a>        implicitly_tagged(Class::Application, number, inner),
+<a href=#458 id=458 data-nosnippet>458</a>{
+<a href=#459 id=459 data-nosnippet>459</a>    implicitly_tagged(Class::Application, number, inner)
+<a href=#460 id=460 data-nosnippet>460</a>}
+<a href=#461 id=461 data-nosnippet>461</a>
+<a href=#462 id=462 data-nosnippet>462</a><span class="doccomment">/// Apply a private-class ASN.1 IMPLICIT tag.
+<a href=#463 id=463 data-nosnippet>463</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#464 id=464 data-nosnippet>464</a>#[verifier::allow_in_spec]
+<a href=#465 id=465 data-nosnippet>465</a></span><span class="kw">pub const fn </span>IMPLICIT_PRIVATE&lt;C: Copy&gt;(number: u64, inner: C) -&gt; ImplicitFmt&lt;C&gt;
+<a href=#466 id=466 data-nosnippet>466</a>    returns
+<a href=#467 id=467 data-nosnippet>467</a>        implicitly_tagged(Class::Private, number, inner),
+<a href=#468 id=468 data-nosnippet>468</a>{
+<a href=#469 id=469 data-nosnippet>469</a>    implicitly_tagged(Class::Private, number, inner)
+<a href=#470 id=470 data-nosnippet>470</a>}
+<a href=#471 id=471 data-nosnippet>471</a>
+<a href=#472 id=472 data-nosnippet>472</a><span class="doccomment">/// Construct an ASN.1 OPTIONAL component with its continuation.
+<a href=#473 id=473 data-nosnippet>473</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#474 id=474 data-nosnippet>474</a>#[verifier::allow_in_spec]
+<a href=#475 id=475 data-nosnippet>475</a></span><span class="kw">pub const fn </span>OPTIONAL&lt;Field, Rest&gt;(field: Field, rest: Rest) -&gt; Optional&lt;Field, Rest&gt;
+<a href=#476 id=476 data-nosnippet>476</a>    returns
+<a href=#477 id=477 data-nosnippet>477</a>        Optional(field, rest),
+<a href=#478 id=478 data-nosnippet>478</a>{
+<a href=#479 id=479 data-nosnippet>479</a>    Optional(field, rest)
+<a href=#480 id=480 data-nosnippet>480</a>}
+<a href=#481 id=481 data-nosnippet>481</a>
+<a href=#482 id=482 data-nosnippet>482</a><span class="doccomment">/// Construct a required ASN.1 component with its continuation.
+<a href=#483 id=483 data-nosnippet>483</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#484 id=484 data-nosnippet>484</a>#[verifier::allow_in_spec]
+<a href=#485 id=485 data-nosnippet>485</a></span><span class="kw">pub const fn </span>REQUIRED&lt;Field, Rest&gt;(field: Field, rest: Rest) -&gt; Pair&lt;Field, Rest&gt;
+<a href=#486 id=486 data-nosnippet>486</a>    returns
+<a href=#487 id=487 data-nosnippet>487</a>        Pair(field, rest),
+<a href=#488 id=488 data-nosnippet>488</a>{
+<a href=#489 id=489 data-nosnippet>489</a>    Pair(field, rest)
+<a href=#490 id=490 data-nosnippet>490</a>}
+<a href=#491 id=491 data-nosnippet>491</a>
+<a href=#492 id=492 data-nosnippet>492</a><span class="doccomment">/// Construct a binary ASN.1 CHOICE.
+<a href=#493 id=493 data-nosnippet>493</a></span><span class="attr">#[allow(non_snake_case)]
+<a href=#494 id=494 data-nosnippet>494</a>#[verifier::allow_in_spec]
+<a href=#495 id=495 data-nosnippet>495</a></span><span class="kw">pub const fn </span>CHOICE&lt;Left, Right&gt;(left: Left, right: Right) -&gt; Choice&lt;Left, Right&gt;
+<a href=#496 id=496 data-nosnippet>496</a>    returns
+<a href=#497 id=497 data-nosnippet>497</a>        Choice(left, right),
+<a href=#498 id=498 data-nosnippet>498</a>{
+<a href=#499 id=499 data-nosnippet>499</a>    Choice(left, right)
+<a href=#500 id=500 data-nosnippet>500</a>}
+<a href=#501 id=501 data-nosnippet>501</a>
+<a href=#502 id=502 data-nosnippet>502</a><span class="doccomment">/// Construct the outer tag used by ASN.1 EXPLICIT tagging.
+<a href=#503 id=503 data-nosnippet>503</a></span><span class="attr">#[verifier::allow_in_spec]
+<a href=#504 id=504 data-nosnippet>504</a></span><span class="kw">pub const fn </span>explicit_tag(class: Class, number: u64) -&gt; Tag
+<a href=#505 id=505 data-nosnippet>505</a>    returns
+<a href=#506 id=506 data-nosnippet>506</a>        (Tag { class, constructed: <span class="bool-val">true</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) }),
+<a href=#507 id=507 data-nosnippet>507</a>{
+<a href=#508 id=508 data-nosnippet>508</a>    Tag { class, constructed: <span class="bool-val">true</span>, number: <span class="kw">super</span>::tag::tag_num_from_uint(number) }
+<a href=#509 id=509 data-nosnippet>509</a>}
+<a href=#510 id=510 data-nosnippet>510</a>
+<a href=#511 id=511 data-nosnippet>511</a><span class="doccomment">/// ASN.1 DEFAULT component with continuation.
+<a href=#512 id=512 data-nosnippet>512</a>///
+<a href=#513 id=513 data-nosnippet>513</a>/// The semantic value always contains the component value. On parsing, absence
+<a href=#514 id=514 data-nosnippet>514</a>/// is replaced by `default`. On serialization, a value equal to `default` is
+<a href=#515 id=515 data-nosnippet>515</a>/// omitted. DER additionally rejects an explicitly encoded default value.
+<a href=#516 id=516 data-nosnippet>516</a></span><span class="attr">#[derive(Copy)]
+<a href=#517 id=517 data-nosnippet>517</a></span><span class="kw">pub struct </span>DefaultedFmt&lt;Field, Default, Rest, <span class="kw">const </span>DER: bool = <span class="bool-val">true</span>&gt;(
+<a href=#518 id=518 data-nosnippet>518</a>    <span class="kw">pub </span>Field,
+<a href=#519 id=519 data-nosnippet>519</a>    <span class="kw">pub </span>Default,
+<a href=#520 id=520 data-nosnippet>520</a>    <span class="kw">pub </span>Rest,
+<a href=#521 id=521 data-nosnippet>521</a>);
+<a href=#522 id=522 data-nosnippet>522</a>
+<a href=#523 id=523 data-nosnippet>523</a><span class="doccomment">/// Construct an ASN.1 DEFAULT component for the selected encoding rules.
+<a href=#524 id=524 data-nosnippet>524</a></span><span class="attr">#[verifier::allow_in_spec]
+<a href=#525 id=525 data-nosnippet>525</a></span><span class="kw">pub const fn </span>defaulted&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt;(
+<a href=#526 id=526 data-nosnippet>526</a>    field: Field,
+<a href=#527 id=527 data-nosnippet>527</a>    default: Field::T,
+<a href=#528 id=528 data-nosnippet>528</a>    rest: Rest,
+<a href=#529 id=529 data-nosnippet>529</a>) -&gt; DefaultedFmt&lt;Field, Field::T, Rest, DER&gt; <span class="kw">where </span>Field: SpecByteLen
+<a href=#530 id=530 data-nosnippet>530</a>    returns
+<a href=#531 id=531 data-nosnippet>531</a>        DefaultedFmt::&lt;Field, Field::T, Rest, DER&gt;(field, default, rest),
+<a href=#532 id=532 data-nosnippet>532</a>{
+<a href=#533 id=533 data-nosnippet>533</a>    DefaultedFmt::&lt;Field, Field::T, Rest, DER&gt;(field, default, rest)
+<a href=#534 id=534 data-nosnippet>534</a>}
+<a href=#535 id=535 data-nosnippet>535</a>
+<a href=#536 id=536 data-nosnippet>536</a><span class="kw">impl</span>&lt;Field: Clone, Default: Clone, Rest: Clone, <span class="kw">const </span>DER: bool&gt; Clone <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#537 id=537 data-nosnippet>537</a>    Field,
+<a href=#538 id=538 data-nosnippet>538</a>    Default,
+<a href=#539 id=539 data-nosnippet>539</a>    Rest,
+<a href=#540 id=540 data-nosnippet>540</a>    DER,
+<a href=#541 id=541 data-nosnippet>541</a>&gt; {
+<a href=#542 id=542 data-nosnippet>542</a>    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (cloned: <span class="self">Self</span>)
+<a href=#543 id=543 data-nosnippet>543</a>        ensures
+<a href=#544 id=544 data-nosnippet>544</a>            call_ensures(Field::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>,), cloned.<span class="number">0</span>),
+<a href=#545 id=545 data-nosnippet>545</a>            call_ensures(Default::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>,), cloned.<span class="number">1</span>),
+<a href=#546 id=546 data-nosnippet>546</a>            call_ensures(Rest::clone, (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">2</span>,), cloned.<span class="number">2</span>),
+<a href=#547 id=547 data-nosnippet>547</a>    {
+<a href=#548 id=548 data-nosnippet>548</a>        DefaultedFmt(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="self">self</span>.<span class="number">1</span>.clone(), <span class="self">self</span>.<span class="number">2</span>.clone())
+<a href=#549 id=549 data-nosnippet>549</a>    }
+<a href=#550 id=550 data-nosnippet>550</a>}
+<a href=#551 id=551 data-nosnippet>551</a>
+<a href=#552 id=552 data-nosnippet>552</a><span class="kw">pub type </span>DefaultedInnerFmt&lt;Field, Rest, T, U, <span class="kw">const </span>DER: bool&gt; = Mapped&lt;
+<a href=#553 id=553 data-nosnippet>553</a>    Refined&lt;Optional&lt;Field, Rest&gt;, PredFnSpec&lt;(<span class="prelude-ty">Option</span>&lt;T&gt;, U)&gt;&gt;,
+<a href=#554 id=554 data-nosnippet>554</a>    FnSpecMapper&lt;(<span class="prelude-ty">Option</span>&lt;T&gt;, U), (T, U)&gt;,
+<a href=#555 id=555 data-nosnippet>555</a>&gt;;
+<a href=#556 id=556 data-nosnippet>556</a>
+<a href=#557 id=557 data-nosnippet>557</a><span class="kw">pub </span>open spec <span class="kw">fn </span>defaulted_fmt&lt;Field: SpecByteLen, Rest: SpecByteLen, <span class="kw">const </span>DER: bool&gt;(
+<a href=#558 id=558 data-nosnippet>558</a>    field: Field,
+<a href=#559 id=559 data-nosnippet>559</a>    default: Field::T,
+<a href=#560 id=560 data-nosnippet>560</a>    rest: Rest,
+<a href=#561 id=561 data-nosnippet>561</a>) -&gt; DefaultedInnerFmt&lt;Field, Rest, Field::T, Rest::T, DER&gt; {
+<a href=#562 id=562 data-nosnippet>562</a>    Mapped {
+<a href=#563 id=563 data-nosnippet>563</a>        inner: Refined(
+<a href=#564 id=564 data-nosnippet>564</a>            Optional(field, rest),
+<a href=#565 id=565 data-nosnippet>565</a>            |(value, <span class="kw">_</span>): (<span class="prelude-ty">Option</span>&lt;Field::T&gt;, Rest::T)|
+<a href=#566 id=566 data-nosnippet>566</a>                DER ==&gt; (value matches <span class="prelude-val">Some</span>(value) ==&gt; value != default),
+<a href=#567 id=567 data-nosnippet>567</a>        ),
+<a href=#568 id=568 data-nosnippet>568</a>        mapper: (
+<a href=#569 id=569 data-nosnippet>569</a>            |(parsed, rest): (<span class="prelude-ty">Option</span>&lt;Field::T&gt;, Rest::T)|
+<a href=#570 id=570 data-nosnippet>570</a>                (
+<a href=#571 id=571 data-nosnippet>571</a>                    <span class="kw">match </span>parsed {
+<a href=#572 id=572 data-nosnippet>572</a>                        <span class="prelude-val">Some</span>(value) =&gt; value,
+<a href=#573 id=573 data-nosnippet>573</a>                        <span class="prelude-val">None </span>=&gt; default,
+<a href=#574 id=574 data-nosnippet>574</a>                    },
+<a href=#575 id=575 data-nosnippet>575</a>                    rest,
+<a href=#576 id=576 data-nosnippet>576</a>                ),
+<a href=#577 id=577 data-nosnippet>577</a>            |(value, rest): (Field::T, Rest::T)|
+<a href=#578 id=578 data-nosnippet>578</a>                (
+<a href=#579 id=579 data-nosnippet>579</a>                    <span class="kw">if </span>value == default {
+<a href=#580 id=580 data-nosnippet>580</a>                        <span class="prelude-val">None
+<a href=#581 id=581 data-nosnippet>581</a>                    </span>} <span class="kw">else </span>{
+<a href=#582 id=582 data-nosnippet>582</a>                        <span class="prelude-val">Some</span>(value)
+<a href=#583 id=583 data-nosnippet>583</a>                    },
+<a href=#584 id=584 data-nosnippet>584</a>                    rest,
+<a href=#585 id=585 data-nosnippet>585</a>                ),
+<a href=#586 id=586 data-nosnippet>586</a>        ),
+<a href=#587 id=587 data-nosnippet>587</a>    }
+<a href=#588 id=588 data-nosnippet>588</a>}
 <a href=#589 id=589 data-nosnippet>589</a>
-<a href=#590 id=590 data-nosnippet>590</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecParser <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#591 id=591 data-nosnippet>591</a>        Field,
-<a href=#592 id=592 data-nosnippet>592</a>        Field::PVal,
-<a href=#593 id=593 data-nosnippet>593</a>        Rest,
-<a href=#594 id=594 data-nosnippet>594</a>        DER,
-<a href=#595 id=595 data-nosnippet>595</a>    &gt; <span class="kw">where
-<a href=#596 id=596 data-nosnippet>596</a>        </span>Field: SpecByteLen + SpecParser&lt;PVal = Field::T&gt;,
-<a href=#597 id=597 data-nosnippet>597</a>        Rest: SpecByteLen + SpecParser&lt;PVal = Rest::T&gt;,
-<a href=#598 id=598 data-nosnippet>598</a>     {
-<a href=#599 id=599 data-nosnippet>599</a>        <span class="kw">type </span>PVal = (Field::PVal, Rest::PVal);
-<a href=#600 id=600 data-nosnippet>600</a>
-<a href=#601 id=601 data-nosnippet>601</a>        open spec <span class="kw">fn </span>spec_parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;(int, <span class="self">Self</span>::PVal)&gt; {
-<a href=#602 id=602 data-nosnippet>602</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_parse(ibuf)
-<a href=#603 id=603 data-nosnippet>603</a>        }
-<a href=#604 id=604 data-nosnippet>604</a>    }
-<a href=#605 id=605 data-nosnippet>605</a>
-<a href=#606 id=606 data-nosnippet>606</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; Consistency <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#607 id=607 data-nosnippet>607</a>        Field,
-<a href=#608 id=608 data-nosnippet>608</a>        Field::Val,
-<a href=#609 id=609 data-nosnippet>609</a>        Rest,
-<a href=#610 id=610 data-nosnippet>610</a>        DER,
-<a href=#611 id=611 data-nosnippet>611</a>    &gt; <span class="kw">where
-<a href=#612 id=612 data-nosnippet>612</a>        </span>Field: SpecByteLen + Consistency&lt;Val = Field::T&gt;,
-<a href=#613 id=613 data-nosnippet>613</a>        Rest: SpecByteLen + Consistency&lt;Val = Rest::T&gt;,
-<a href=#614 id=614 data-nosnippet>614</a>     {
-<a href=#615 id=615 data-nosnippet>615</a>        <span class="kw">type </span>Val = (Field::Val, Rest::Val);
-<a href=#616 id=616 data-nosnippet>616</a>
-<a href=#617 id=617 data-nosnippet>617</a>        open spec <span class="kw">fn </span>consistent(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::Val) -&gt; bool {
-<a href=#618 id=618 data-nosnippet>618</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).consistent(v)
-<a href=#619 id=619 data-nosnippet>619</a>        }
-<a href=#620 id=620 data-nosnippet>620</a>    }
-<a href=#621 id=621 data-nosnippet>621</a>
-<a href=#622 id=622 data-nosnippet>622</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecSerializerDps <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#623 id=623 data-nosnippet>623</a>        Field,
-<a href=#624 id=624 data-nosnippet>624</a>        Field::SValue,
-<a href=#625 id=625 data-nosnippet>625</a>        Rest,
-<a href=#626 id=626 data-nosnippet>626</a>        DER,
-<a href=#627 id=627 data-nosnippet>627</a>    &gt; <span class="kw">where
-<a href=#628 id=628 data-nosnippet>628</a>        </span>Field: SpecByteLen + SpecSerializerDps&lt;SValue = Field::T&gt;,
-<a href=#629 id=629 data-nosnippet>629</a>        Rest: SpecByteLen + SpecSerializerDps&lt;SValue = Rest::T&gt;,
-<a href=#630 id=630 data-nosnippet>630</a>     {
-<a href=#631 id=631 data-nosnippet>631</a>        <span class="kw">type </span>SValue = (Field::SValue, Rest::SValue);
-<a href=#632 id=632 data-nosnippet>632</a>
-<a href=#633 id=633 data-nosnippet>633</a>        open spec <span class="kw">fn </span>spec_serialize_dps(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) -&gt; Seq&lt;u8&gt; {
-<a href=#634 id=634 data-nosnippet>634</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_serialize_dps(v, obuf)
-<a href=#635 id=635 data-nosnippet>635</a>        }
-<a href=#636 id=636 data-nosnippet>636</a>    }
-<a href=#637 id=637 data-nosnippet>637</a>
-<a href=#638 id=638 data-nosnippet>638</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecSerializer <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#639 id=639 data-nosnippet>639</a>        Field,
-<a href=#640 id=640 data-nosnippet>640</a>        Field::SVal,
-<a href=#641 id=641 data-nosnippet>641</a>        Rest,
-<a href=#642 id=642 data-nosnippet>642</a>        DER,
-<a href=#643 id=643 data-nosnippet>643</a>    &gt; <span class="kw">where
-<a href=#644 id=644 data-nosnippet>644</a>        </span>Field: SpecByteLen + SpecSerializer&lt;SVal = Field::T&gt;,
-<a href=#645 id=645 data-nosnippet>645</a>        Rest: SpecByteLen + SpecSerializer&lt;SVal = Rest::T&gt;,
-<a href=#646 id=646 data-nosnippet>646</a>     {
-<a href=#647 id=647 data-nosnippet>647</a>        <span class="kw">type </span>SVal = (Field::SVal, Rest::SVal);
-<a href=#648 id=648 data-nosnippet>648</a>
-<a href=#649 id=649 data-nosnippet>649</a>        open spec <span class="kw">fn </span>spec_serialize(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) -&gt; Seq&lt;u8&gt; {
-<a href=#650 id=650 data-nosnippet>650</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_serialize(v)
-<a href=#651 id=651 data-nosnippet>651</a>        }
-<a href=#652 id=652 data-nosnippet>652</a>    }
-<a href=#653 id=653 data-nosnippet>653</a>
-<a href=#654 id=654 data-nosnippet>654</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecByteLen <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#655 id=655 data-nosnippet>655</a>        Field,
-<a href=#656 id=656 data-nosnippet>656</a>        Field::T,
-<a href=#657 id=657 data-nosnippet>657</a>        Rest,
-<a href=#658 id=658 data-nosnippet>658</a>        DER,
-<a href=#659 id=659 data-nosnippet>659</a>    &gt; <span class="kw">where </span>Field: SpecByteLen, Rest: SpecByteLen {
-<a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">type </span>T = (Field::T, Rest::T);
-<a href=#661 id=661 data-nosnippet>661</a>
-<a href=#662 id=662 data-nosnippet>662</a>        open spec <span class="kw">fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T) -&gt; nat {
-<a href=#663 id=663 data-nosnippet>663</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).byte_len(v)
-<a href=#664 id=664 data-nosnippet>664</a>        }
-<a href=#665 id=665 data-nosnippet>665</a>    }
-<a href=#666 id=666 data-nosnippet>666</a>
-<a href=#667 id=667 data-nosnippet>667</a>}
-<a href=#668 id=668 data-nosnippet>668</a>
-<a href=#669 id=669 data-nosnippet>669</a><span class="kw">mod </span>derived_proofs {
-<a href=#670 id=670 data-nosnippet>670</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#590 id=590 data-nosnippet>590</a><span class="kw">mod </span>derived_specs {
+<a href=#591 id=591 data-nosnippet>591</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#592 id=592 data-nosnippet>592</a>
+<a href=#593 id=593 data-nosnippet>593</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecParser <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#594 id=594 data-nosnippet>594</a>        Field,
+<a href=#595 id=595 data-nosnippet>595</a>        Field::PVal,
+<a href=#596 id=596 data-nosnippet>596</a>        Rest,
+<a href=#597 id=597 data-nosnippet>597</a>        DER,
+<a href=#598 id=598 data-nosnippet>598</a>    &gt; <span class="kw">where
+<a href=#599 id=599 data-nosnippet>599</a>        </span>Field: SpecByteLen + SpecParser&lt;PVal = Field::T&gt;,
+<a href=#600 id=600 data-nosnippet>600</a>        Rest: SpecByteLen + SpecParser&lt;PVal = Rest::T&gt;,
+<a href=#601 id=601 data-nosnippet>601</a>     {
+<a href=#602 id=602 data-nosnippet>602</a>        <span class="kw">type </span>PVal = (Field::PVal, Rest::PVal);
+<a href=#603 id=603 data-nosnippet>603</a>
+<a href=#604 id=604 data-nosnippet>604</a>        open spec <span class="kw">fn </span>spec_parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;(int, <span class="self">Self</span>::PVal)&gt; {
+<a href=#605 id=605 data-nosnippet>605</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_parse(ibuf)
+<a href=#606 id=606 data-nosnippet>606</a>        }
+<a href=#607 id=607 data-nosnippet>607</a>    }
+<a href=#608 id=608 data-nosnippet>608</a>
+<a href=#609 id=609 data-nosnippet>609</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; Consistency <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#610 id=610 data-nosnippet>610</a>        Field,
+<a href=#611 id=611 data-nosnippet>611</a>        Field::Val,
+<a href=#612 id=612 data-nosnippet>612</a>        Rest,
+<a href=#613 id=613 data-nosnippet>613</a>        DER,
+<a href=#614 id=614 data-nosnippet>614</a>    &gt; <span class="kw">where
+<a href=#615 id=615 data-nosnippet>615</a>        </span>Field: SpecByteLen + Consistency&lt;Val = Field::T&gt;,
+<a href=#616 id=616 data-nosnippet>616</a>        Rest: SpecByteLen + Consistency&lt;Val = Rest::T&gt;,
+<a href=#617 id=617 data-nosnippet>617</a>     {
+<a href=#618 id=618 data-nosnippet>618</a>        <span class="kw">type </span>Val = (Field::Val, Rest::Val);
+<a href=#619 id=619 data-nosnippet>619</a>
+<a href=#620 id=620 data-nosnippet>620</a>        open spec <span class="kw">fn </span>consistent(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::Val) -&gt; bool {
+<a href=#621 id=621 data-nosnippet>621</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).consistent(v)
+<a href=#622 id=622 data-nosnippet>622</a>        }
+<a href=#623 id=623 data-nosnippet>623</a>    }
+<a href=#624 id=624 data-nosnippet>624</a>
+<a href=#625 id=625 data-nosnippet>625</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecSerializerDps <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#626 id=626 data-nosnippet>626</a>        Field,
+<a href=#627 id=627 data-nosnippet>627</a>        Field::SValue,
+<a href=#628 id=628 data-nosnippet>628</a>        Rest,
+<a href=#629 id=629 data-nosnippet>629</a>        DER,
+<a href=#630 id=630 data-nosnippet>630</a>    &gt; <span class="kw">where
+<a href=#631 id=631 data-nosnippet>631</a>        </span>Field: SpecByteLen + SpecSerializerDps&lt;SValue = Field::T&gt;,
+<a href=#632 id=632 data-nosnippet>632</a>        Rest: SpecByteLen + SpecSerializerDps&lt;SValue = Rest::T&gt;,
+<a href=#633 id=633 data-nosnippet>633</a>     {
+<a href=#634 id=634 data-nosnippet>634</a>        <span class="kw">type </span>SValue = (Field::SValue, Rest::SValue);
+<a href=#635 id=635 data-nosnippet>635</a>
+<a href=#636 id=636 data-nosnippet>636</a>        open spec <span class="kw">fn </span>spec_serialize_dps(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) -&gt; Seq&lt;u8&gt; {
+<a href=#637 id=637 data-nosnippet>637</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_serialize_dps(v, obuf)
+<a href=#638 id=638 data-nosnippet>638</a>        }
+<a href=#639 id=639 data-nosnippet>639</a>    }
+<a href=#640 id=640 data-nosnippet>640</a>
+<a href=#641 id=641 data-nosnippet>641</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecSerializer <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#642 id=642 data-nosnippet>642</a>        Field,
+<a href=#643 id=643 data-nosnippet>643</a>        Field::SVal,
+<a href=#644 id=644 data-nosnippet>644</a>        Rest,
+<a href=#645 id=645 data-nosnippet>645</a>        DER,
+<a href=#646 id=646 data-nosnippet>646</a>    &gt; <span class="kw">where
+<a href=#647 id=647 data-nosnippet>647</a>        </span>Field: SpecByteLen + SpecSerializer&lt;SVal = Field::T&gt;,
+<a href=#648 id=648 data-nosnippet>648</a>        Rest: SpecByteLen + SpecSerializer&lt;SVal = Rest::T&gt;,
+<a href=#649 id=649 data-nosnippet>649</a>     {
+<a href=#650 id=650 data-nosnippet>650</a>        <span class="kw">type </span>SVal = (Field::SVal, Rest::SVal);
+<a href=#651 id=651 data-nosnippet>651</a>
+<a href=#652 id=652 data-nosnippet>652</a>        open spec <span class="kw">fn </span>spec_serialize(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) -&gt; Seq&lt;u8&gt; {
+<a href=#653 id=653 data-nosnippet>653</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).spec_serialize(v)
+<a href=#654 id=654 data-nosnippet>654</a>        }
+<a href=#655 id=655 data-nosnippet>655</a>    }
+<a href=#656 id=656 data-nosnippet>656</a>
+<a href=#657 id=657 data-nosnippet>657</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SpecByteLen <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#658 id=658 data-nosnippet>658</a>        Field,
+<a href=#659 id=659 data-nosnippet>659</a>        Field::T,
+<a href=#660 id=660 data-nosnippet>660</a>        Rest,
+<a href=#661 id=661 data-nosnippet>661</a>        DER,
+<a href=#662 id=662 data-nosnippet>662</a>    &gt; <span class="kw">where </span>Field: SpecByteLen, Rest: SpecByteLen {
+<a href=#663 id=663 data-nosnippet>663</a>        <span class="kw">type </span>T = (Field::T, Rest::T);
+<a href=#664 id=664 data-nosnippet>664</a>
+<a href=#665 id=665 data-nosnippet>665</a>        open spec <span class="kw">fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T) -&gt; nat {
+<a href=#666 id=666 data-nosnippet>666</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).byte_len(v)
+<a href=#667 id=667 data-nosnippet>667</a>        }
+<a href=#668 id=668 data-nosnippet>668</a>    }
+<a href=#669 id=669 data-nosnippet>669</a>
+<a href=#670 id=670 data-nosnippet>670</a>}
 <a href=#671 id=671 data-nosnippet>671</a>
-<a href=#672 id=672 data-nosnippet>672</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SafeParser <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#673 id=673 data-nosnippet>673</a>        Field,
-<a href=#674 id=674 data-nosnippet>674</a>        Field::PVal,
-<a href=#675 id=675 data-nosnippet>675</a>        Rest,
-<a href=#676 id=676 data-nosnippet>676</a>        DER,
-<a href=#677 id=677 data-nosnippet>677</a>    &gt; <span class="kw">where
-<a href=#678 id=678 data-nosnippet>678</a>        </span>Field: SpecByteLen + SafeParser&lt;PVal = Field::T&gt;,
-<a href=#679 id=679 data-nosnippet>679</a>        Rest: SpecByteLen + SafeParser&lt;PVal = Rest::T&gt;,
-<a href=#680 id=680 data-nosnippet>680</a>     {
-<a href=#681 id=681 data-nosnippet>681</a>        open spec <span class="kw">fn </span>safe_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#682 id=682 data-nosnippet>682</a>            <span class="self">self</span>.<span class="number">0</span>.safe_inv() &amp;&amp; <span class="self">self</span>.<span class="number">2</span>.safe_inv()
-<a href=#683 id=683 data-nosnippet>683</a>        }
-<a href=#684 id=684 data-nosnippet>684</a>
-<a href=#685 id=685 data-nosnippet>685</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#686 id=686 data-nosnippet>686</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_safe(ibuf);
-<a href=#687 id=687 data-nosnippet>687</a>        }
-<a href=#688 id=688 data-nosnippet>688</a>    }
-<a href=#689 id=689 data-nosnippet>689</a>
-<a href=#690 id=690 data-nosnippet>690</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; Productive <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#691 id=691 data-nosnippet>691</a>        Field,
-<a href=#692 id=692 data-nosnippet>692</a>        Field::PVal,
-<a href=#693 id=693 data-nosnippet>693</a>        Rest,
-<a href=#694 id=694 data-nosnippet>694</a>        DER,
-<a href=#695 id=695 data-nosnippet>695</a>    &gt; <span class="kw">where
-<a href=#696 id=696 data-nosnippet>696</a>        </span>Field: SpecByteLen + Productive&lt;PVal = Field::T&gt;,
-<a href=#697 id=697 data-nosnippet>697</a>        Rest: SpecByteLen + Productive&lt;PVal = Rest::T&gt;,
-<a href=#698 id=698 data-nosnippet>698</a>     {
-<a href=#699 id=699 data-nosnippet>699</a>        open spec <span class="kw">fn </span>productive_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#700 id=700 data-nosnippet>700</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).productive_inv()
-<a href=#701 id=701 data-nosnippet>701</a>        }
-<a href=#702 id=702 data-nosnippet>702</a>
-<a href=#703 id=703 data-nosnippet>703</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
-<a href=#704 id=704 data-nosnippet>704</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_productive(s);
-<a href=#705 id=705 data-nosnippet>705</a>        }
-<a href=#706 id=706 data-nosnippet>706</a>    }
-<a href=#707 id=707 data-nosnippet>707</a>
-<a href=#708 id=708 data-nosnippet>708</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SoundParser <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#709 id=709 data-nosnippet>709</a>        Field,
-<a href=#710 id=710 data-nosnippet>710</a>        Field::PVal,
-<a href=#711 id=711 data-nosnippet>711</a>        Rest,
-<a href=#712 id=712 data-nosnippet>712</a>        DER,
-<a href=#713 id=713 data-nosnippet>713</a>    &gt; <span class="kw">where
-<a href=#714 id=714 data-nosnippet>714</a>        </span>Field: SpecByteLen + SoundParser&lt;PVal = Field::T&gt;,
-<a href=#715 id=715 data-nosnippet>715</a>        Rest: SpecByteLen + SoundParser&lt;PVal = Rest::T&gt;,
-<a href=#716 id=716 data-nosnippet>716</a>     {
-<a href=#717 id=717 data-nosnippet>717</a>        open spec <span class="kw">fn </span>sound_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#718 id=718 data-nosnippet>718</a>            <span class="self">self</span>.<span class="number">0</span>.sound_inv() &amp;&amp; <span class="self">self</span>.<span class="number">2</span>.sound_inv()
-<a href=#719 id=719 data-nosnippet>719</a>        }
-<a href=#720 id=720 data-nosnippet>720</a>
-<a href=#721 id=721 data-nosnippet>721</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#722 id=722 data-nosnippet>722</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_sound_value(ibuf);
-<a href=#723 id=723 data-nosnippet>723</a>        }
-<a href=#724 id=724 data-nosnippet>724</a>    }
-<a href=#725 id=725 data-nosnippet>725</a>
-<a href=#726 id=726 data-nosnippet>726</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; StrictParser <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#727 id=727 data-nosnippet>727</a>        Field,
-<a href=#728 id=728 data-nosnippet>728</a>        Field::PVal,
-<a href=#729 id=729 data-nosnippet>729</a>        Rest,
-<a href=#730 id=730 data-nosnippet>730</a>        DER,
-<a href=#731 id=731 data-nosnippet>731</a>    &gt; <span class="kw">where </span>Field: StrictParser, Rest: StrictParser {
-<a href=#732 id=732 data-nosnippet>732</a>        open spec <span class="kw">fn </span>strict_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#733 id=733 data-nosnippet>733</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).strict_inv()
-<a href=#734 id=734 data-nosnippet>734</a>        }
-<a href=#735 id=735 data-nosnippet>735</a>
-<a href=#736 id=736 data-nosnippet>736</a>        proof <span class="kw">fn </span>lemma_parse_strict_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
-<a href=#737 id=737 data-nosnippet>737</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
-<a href=#738 id=738 data-nosnippet>738</a>                <span class="self">self</span>.<span class="number">0</span>,
-<a href=#739 id=739 data-nosnippet>739</a>                <span class="self">self</span>.<span class="number">1</span>,
-<a href=#740 id=740 data-nosnippet>740</a>                <span class="self">self</span>.<span class="number">2</span>,
-<a href=#741 id=741 data-nosnippet>741</a>            ).lemma_parse_strict_consumption(ibuf);
-<a href=#742 id=742 data-nosnippet>742</a>        }
-<a href=#743 id=743 data-nosnippet>743</a>    }
-<a href=#744 id=744 data-nosnippet>744</a>
-<a href=#745 id=745 data-nosnippet>745</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NonTailFmt <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#746 id=746 data-nosnippet>746</a>        Field,
-<a href=#747 id=747 data-nosnippet>747</a>        Field::SValue,
-<a href=#748 id=748 data-nosnippet>748</a>        Rest,
-<a href=#749 id=749 data-nosnippet>749</a>        DER,
-<a href=#750 id=750 data-nosnippet>750</a>    &gt; <span class="kw">where </span>Field: NonTailFmt, Rest: NonTailFmt {
-<a href=#751 id=751 data-nosnippet>751</a>        open spec <span class="kw">fn </span>serialize_dps_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#752 id=752 data-nosnippet>752</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).serialize_dps_inv()
-<a href=#753 id=753 data-nosnippet>753</a>        }
-<a href=#754 id=754 data-nosnippet>754</a>
-<a href=#755 id=755 data-nosnippet>755</a>        proof <span class="kw">fn </span>lemma_serialize_dps_prepend(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
-<a href=#756 id=756 data-nosnippet>756</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_dps_prepend(
-<a href=#757 id=757 data-nosnippet>757</a>                v,
-<a href=#758 id=758 data-nosnippet>758</a>                obuf,
-<a href=#759 id=759 data-nosnippet>759</a>            );
-<a href=#760 id=760 data-nosnippet>760</a>        }
-<a href=#761 id=761 data-nosnippet>761</a>
-<a href=#762 id=762 data-nosnippet>762</a>        proof <span class="kw">fn </span>lemma_serialize_dps_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
-<a href=#763 id=763 data-nosnippet>763</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_dps_len(
-<a href=#764 id=764 data-nosnippet>764</a>                v,
-<a href=#765 id=765 data-nosnippet>765</a>                obuf,
-<a href=#766 id=766 data-nosnippet>766</a>            );
-<a href=#767 id=767 data-nosnippet>767</a>        }
-<a href=#768 id=768 data-nosnippet>768</a>    }
-<a href=#769 id=769 data-nosnippet>769</a>
-<a href=#770 id=770 data-nosnippet>770</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#771 id=771 data-nosnippet>771</a>        Field,
-<a href=#772 id=772 data-nosnippet>772</a>        Field::SVal,
-<a href=#773 id=773 data-nosnippet>773</a>        Rest,
-<a href=#774 id=774 data-nosnippet>774</a>        DER,
-<a href=#775 id=775 data-nosnippet>775</a>    &gt; <span class="kw">where </span>Field: GoodSerializer, Rest: GoodSerializer {
-<a href=#776 id=776 data-nosnippet>776</a>        open spec <span class="kw">fn </span>serialize_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#777 id=777 data-nosnippet>777</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).serialize_inv()
-<a href=#778 id=778 data-nosnippet>778</a>        }
-<a href=#779 id=779 data-nosnippet>779</a>
-<a href=#780 id=780 data-nosnippet>780</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#781 id=781 data-nosnippet>781</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_len(v);
-<a href=#782 id=782 data-nosnippet>782</a>        }
-<a href=#783 id=783 data-nosnippet>783</a>    }
-<a href=#784 id=784 data-nosnippet>784</a>
-<a href=#785 id=785 data-nosnippet>785</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#786 id=786 data-nosnippet>786</a>        Field,
-<a href=#787 id=787 data-nosnippet>787</a>        Field::T,
-<a href=#788 id=788 data-nosnippet>788</a>        Rest,
-<a href=#789 id=789 data-nosnippet>789</a>        DER,
-<a href=#790 id=790 data-nosnippet>790</a>    &gt; <span class="kw">where </span>Field: SPRoundTripDps + NonTailFmt, Rest: SPRoundTripDps {
-<a href=#791 id=791 data-nosnippet>791</a>        open spec <span class="kw">fn </span>unambiguous(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#792 id=792 data-nosnippet>792</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).unambiguous()
-<a href=#793 id=793 data-nosnippet>793</a>        }
-<a href=#794 id=794 data-nosnippet>794</a>
-<a href=#795 id=795 data-nosnippet>795</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
-<a href=#796 id=796 data-nosnippet>796</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
-<a href=#797 id=797 data-nosnippet>797</a>                <span class="self">self</span>.<span class="number">0</span>,
-<a href=#798 id=798 data-nosnippet>798</a>                <span class="self">self</span>.<span class="number">1</span>,
-<a href=#799 id=799 data-nosnippet>799</a>                <span class="self">self</span>.<span class="number">2</span>,
-<a href=#800 id=800 data-nosnippet>800</a>            ).theorem_serialize_dps_parse_roundtrip(v, obuf);
-<a href=#801 id=801 data-nosnippet>801</a>        }
-<a href=#802 id=802 data-nosnippet>802</a>    }
-<a href=#803 id=803 data-nosnippet>803</a>
-<a href=#804 id=804 data-nosnippet>804</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NoLookAhead <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#805 id=805 data-nosnippet>805</a>        Field,
-<a href=#806 id=806 data-nosnippet>806</a>        Field::PVal,
-<a href=#807 id=807 data-nosnippet>807</a>        Rest,
-<a href=#808 id=808 data-nosnippet>808</a>        DER,
-<a href=#809 id=809 data-nosnippet>809</a>    &gt; <span class="kw">where
-<a href=#810 id=810 data-nosnippet>810</a>        </span>Field: SpecByteLen + NoLookAhead&lt;PVal = Field::T&gt;,
-<a href=#811 id=811 data-nosnippet>811</a>        Rest: SpecByteLen + NoLookAhead&lt;PVal = Rest::T&gt;,
-<a href=#812 id=812 data-nosnippet>812</a>     {
-<a href=#813 id=813 data-nosnippet>813</a>        open spec <span class="kw">fn </span>no_lookahead_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#814 id=814 data-nosnippet>814</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).no_lookahead_inv()
-<a href=#815 id=815 data-nosnippet>815</a>        }
-<a href=#816 id=816 data-nosnippet>816</a>
-<a href=#817 id=817 data-nosnippet>817</a>        proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
-<a href=#818 id=818 data-nosnippet>818</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_no_lookahead(i1, i2);
-<a href=#819 id=819 data-nosnippet>819</a>        }
-<a href=#820 id=820 data-nosnippet>820</a>    }
-<a href=#821 id=821 data-nosnippet>821</a>
-<a href=#822 id=822 data-nosnippet>822</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NonMalleable <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#823 id=823 data-nosnippet>823</a>        Field,
-<a href=#824 id=824 data-nosnippet>824</a>        Field::PVal,
-<a href=#825 id=825 data-nosnippet>825</a>        Rest,
-<a href=#826 id=826 data-nosnippet>826</a>        DER,
-<a href=#827 id=827 data-nosnippet>827</a>    &gt; <span class="kw">where
-<a href=#828 id=828 data-nosnippet>828</a>        </span>Field: SpecByteLen + SoundParser&lt;PVal = Field::T&gt; + NonMalleable,
-<a href=#829 id=829 data-nosnippet>829</a>        Rest: SpecByteLen + SoundParser&lt;PVal = Rest::T&gt; + NonMalleable,
-<a href=#830 id=830 data-nosnippet>830</a>     {
-<a href=#831 id=831 data-nosnippet>831</a>        open spec <span class="kw">fn </span>nonmal_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#832 id=832 data-nosnippet>832</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).nonmal_inv()
-<a href=#833 id=833 data-nosnippet>833</a>        }
-<a href=#834 id=834 data-nosnippet>834</a>
-<a href=#835 id=835 data-nosnippet>835</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
-<a href=#836 id=836 data-nosnippet>836</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_non_malleable(
-<a href=#837 id=837 data-nosnippet>837</a>                buf1,
-<a href=#838 id=838 data-nosnippet>838</a>                buf2,
-<a href=#839 id=839 data-nosnippet>839</a>            );
-<a href=#840 id=840 data-nosnippet>840</a>        }
-<a href=#841 id=841 data-nosnippet>841</a>    }
-<a href=#842 id=842 data-nosnippet>842</a>
-<a href=#843 id=843 data-nosnippet>843</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; EquivSerializersGeneral <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#844 id=844 data-nosnippet>844</a>        Field,
-<a href=#845 id=845 data-nosnippet>845</a>        Field::SVal,
-<a href=#846 id=846 data-nosnippet>846</a>        Rest,
-<a href=#847 id=847 data-nosnippet>847</a>        DER,
-<a href=#848 id=848 data-nosnippet>848</a>    &gt; <span class="kw">where
-<a href=#849 id=849 data-nosnippet>849</a>        </span>Field: SpecByteLen + EquivSerializersGeneral&lt;SVal = Field::T&gt;,
-<a href=#850 id=850 data-nosnippet>850</a>        Rest: SpecByteLen + EquivSerializersGeneral&lt;SVal = Rest::T&gt;,
-<a href=#851 id=851 data-nosnippet>851</a>     {
-<a href=#852 id=852 data-nosnippet>852</a>        open spec <span class="kw">fn </span>equiv_general_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#853 id=853 data-nosnippet>853</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).equiv_general_inv()
-<a href=#854 id=854 data-nosnippet>854</a>        }
-<a href=#855 id=855 data-nosnippet>855</a>
-<a href=#856 id=856 data-nosnippet>856</a>        proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
-<a href=#857 id=857 data-nosnippet>857</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_equiv(
-<a href=#858 id=858 data-nosnippet>858</a>                v,
-<a href=#859 id=859 data-nosnippet>859</a>                obuf,
-<a href=#860 id=860 data-nosnippet>860</a>            );
-<a href=#861 id=861 data-nosnippet>861</a>        }
-<a href=#862 id=862 data-nosnippet>862</a>    }
-<a href=#863 id=863 data-nosnippet>863</a>
-<a href=#864 id=864 data-nosnippet>864</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#865 id=865 data-nosnippet>865</a>        Field,
-<a href=#866 id=866 data-nosnippet>866</a>        Field::SVal,
-<a href=#867 id=867 data-nosnippet>867</a>        Rest,
-<a href=#868 id=868 data-nosnippet>868</a>        DER,
-<a href=#869 id=869 data-nosnippet>869</a>    &gt; <span class="kw">where
-<a href=#870 id=870 data-nosnippet>870</a>        </span>Field: SpecByteLen + EquivSerializersGeneral&lt;SVal = Field::T&gt;,
-<a href=#871 id=871 data-nosnippet>871</a>        Rest: SpecByteLen + EquivSerializers&lt;SVal = Rest::T&gt;,
-<a href=#872 id=872 data-nosnippet>872</a>     {
-<a href=#873 id=873 data-nosnippet>873</a>        open spec <span class="kw">fn </span>equiv_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#874 id=874 data-nosnippet>874</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).equiv_inv()
-<a href=#875 id=875 data-nosnippet>875</a>        }
-<a href=#876 id=876 data-nosnippet>876</a>
-<a href=#877 id=877 data-nosnippet>877</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
-<a href=#878 id=878 data-nosnippet>878</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
-<a href=#879 id=879 data-nosnippet>879</a>                <span class="self">self</span>.<span class="number">0</span>,
-<a href=#880 id=880 data-nosnippet>880</a>                <span class="self">self</span>.<span class="number">1</span>,
-<a href=#881 id=881 data-nosnippet>881</a>                <span class="self">self</span>.<span class="number">2</span>,
-<a href=#882 id=882 data-nosnippet>882</a>            ).lemma_serialize_equiv_on_empty(v);
-<a href=#883 id=883 data-nosnippet>883</a>        }
-<a href=#884 id=884 data-nosnippet>884</a>    }
-<a href=#885 id=885 data-nosnippet>885</a>
-<a href=#886 id=886 data-nosnippet>886</a>}
-<a href=#887 id=887 data-nosnippet>887</a>
-<a href=#888 id=888 data-nosnippet>888</a><span class="comment">/*
-<a href=#889 id=889 data-nosnippet>889</a> * TODO: Due to technical reasons, `DefaultedFmt` now only support `Structural` (in the Verus sense) types. To support non-Structural types,
-<a href=#890 id=890 data-nosnippet>890</a> * `DefaultedFmt` needs to take both the `exec` default value and the `spec` default value, which is the `DeepView` of the `exec` default value.
-<a href=#891 id=891 data-nosnippet>891</a> */
-<a href=#892 id=892 data-nosnippet>892</a>
-<a href=#893 id=893 data-nosnippet>893</a></span><span class="kw">impl</span>&lt;I, Field, Rest, <span class="kw">const </span>DER: bool&gt; Parser&lt;I&gt; <span class="kw">for </span>DefaultedFmt&lt;Field, Field::T, Rest, DER&gt; <span class="kw">where
-<a href=#894 id=894 data-nosnippet>894</a>    </span>I: InputBuf,
-<a href=#895 id=895 data-nosnippet>895</a>    Field: Parser&lt;I, PT = Field::T&gt; + SafeParser&lt;PVal = Field::T&gt; + SpecByteLen,
-<a href=#896 id=896 data-nosnippet>896</a>    Rest: Parser&lt;I&gt; + SafeParser&lt;PVal = Rest::T&gt; + SpecByteLen,
-<a href=#897 id=897 data-nosnippet>897</a>    Field::T: DeepView&lt;V = Field::T&gt; + PartialEq + Structural + Copy,
-<a href=#898 id=898 data-nosnippet>898</a> {
-<a href=#899 id=899 data-nosnippet>899</a>    <span class="kw">type </span>PT = (Field::PT, Rest::PT);
-<a href=#900 id=900 data-nosnippet>900</a>
-<a href=#901 id=901 data-nosnippet>901</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#902 id=902 data-nosnippet>902</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
-<a href=#903 id=903 data-nosnippet>903</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.safe_inv()
-<a href=#904 id=904 data-nosnippet>904</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
-<a href=#905 id=905 data-nosnippet>905</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.safe_inv()
-<a href=#906 id=906 data-nosnippet>906</a>        &amp;&amp;&amp; forall|v: Field::T| v.deep_view() == v
-<a href=#907 id=907 data-nosnippet>907</a>        &amp;&amp;&amp; vstd::laws_eq::obeys_concrete_eq::&lt;Field::T&gt;()
-<a href=#908 id=908 data-nosnippet>908</a>    }
-<a href=#909 id=909 data-nosnippet>909</a>
-<a href=#910 id=910 data-nosnippet>910</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: <span class="kw-2">&amp;</span>I) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
-<a href=#911 id=911 data-nosnippet>911</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
-<a href=#912 id=912 data-nosnippet>912</a>
-<a href=#913 id=913 data-nosnippet>913</a>        reveal(vstd::laws_eq::obeys_concrete_eq);
-<a href=#914 id=914 data-nosnippet>914</a>
-<a href=#915 id=915 data-nosnippet>915</a>        <span class="kw">let </span>(n, (field, rest)) = Optional(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">2</span>).parse(ibuf)<span class="question-mark">?</span>;
+<a href=#672 id=672 data-nosnippet>672</a><span class="kw">mod </span>derived_proofs {
+<a href=#673 id=673 data-nosnippet>673</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#674 id=674 data-nosnippet>674</a>
+<a href=#675 id=675 data-nosnippet>675</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SafeParser <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#676 id=676 data-nosnippet>676</a>        Field,
+<a href=#677 id=677 data-nosnippet>677</a>        Field::PVal,
+<a href=#678 id=678 data-nosnippet>678</a>        Rest,
+<a href=#679 id=679 data-nosnippet>679</a>        DER,
+<a href=#680 id=680 data-nosnippet>680</a>    &gt; <span class="kw">where
+<a href=#681 id=681 data-nosnippet>681</a>        </span>Field: SpecByteLen + SafeParser&lt;PVal = Field::T&gt;,
+<a href=#682 id=682 data-nosnippet>682</a>        Rest: SpecByteLen + SafeParser&lt;PVal = Rest::T&gt;,
+<a href=#683 id=683 data-nosnippet>683</a>     {
+<a href=#684 id=684 data-nosnippet>684</a>        open spec <span class="kw">fn </span>safe_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#685 id=685 data-nosnippet>685</a>            <span class="self">self</span>.<span class="number">0</span>.safe_inv() &amp;&amp; <span class="self">self</span>.<span class="number">2</span>.safe_inv()
+<a href=#686 id=686 data-nosnippet>686</a>        }
+<a href=#687 id=687 data-nosnippet>687</a>
+<a href=#688 id=688 data-nosnippet>688</a>        proof <span class="kw">fn </span>lemma_parse_safe(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#689 id=689 data-nosnippet>689</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_safe(ibuf);
+<a href=#690 id=690 data-nosnippet>690</a>        }
+<a href=#691 id=691 data-nosnippet>691</a>    }
+<a href=#692 id=692 data-nosnippet>692</a>
+<a href=#693 id=693 data-nosnippet>693</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; Productive <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#694 id=694 data-nosnippet>694</a>        Field,
+<a href=#695 id=695 data-nosnippet>695</a>        Field::PVal,
+<a href=#696 id=696 data-nosnippet>696</a>        Rest,
+<a href=#697 id=697 data-nosnippet>697</a>        DER,
+<a href=#698 id=698 data-nosnippet>698</a>    &gt; <span class="kw">where
+<a href=#699 id=699 data-nosnippet>699</a>        </span>Field: SpecByteLen + Productive&lt;PVal = Field::T&gt;,
+<a href=#700 id=700 data-nosnippet>700</a>        Rest: SpecByteLen + Productive&lt;PVal = Rest::T&gt;,
+<a href=#701 id=701 data-nosnippet>701</a>     {
+<a href=#702 id=702 data-nosnippet>702</a>        open spec <span class="kw">fn </span>productive_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#703 id=703 data-nosnippet>703</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).productive_inv()
+<a href=#704 id=704 data-nosnippet>704</a>        }
+<a href=#705 id=705 data-nosnippet>705</a>
+<a href=#706 id=706 data-nosnippet>706</a>        proof <span class="kw">fn </span>lemma_productive(<span class="kw-2">&amp;</span><span class="self">self</span>, s: Seq&lt;u8&gt;) {
+<a href=#707 id=707 data-nosnippet>707</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_productive(s);
+<a href=#708 id=708 data-nosnippet>708</a>        }
+<a href=#709 id=709 data-nosnippet>709</a>    }
+<a href=#710 id=710 data-nosnippet>710</a>
+<a href=#711 id=711 data-nosnippet>711</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SoundParser <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#712 id=712 data-nosnippet>712</a>        Field,
+<a href=#713 id=713 data-nosnippet>713</a>        Field::PVal,
+<a href=#714 id=714 data-nosnippet>714</a>        Rest,
+<a href=#715 id=715 data-nosnippet>715</a>        DER,
+<a href=#716 id=716 data-nosnippet>716</a>    &gt; <span class="kw">where
+<a href=#717 id=717 data-nosnippet>717</a>        </span>Field: SpecByteLen + SoundParser&lt;PVal = Field::T&gt;,
+<a href=#718 id=718 data-nosnippet>718</a>        Rest: SpecByteLen + SoundParser&lt;PVal = Rest::T&gt;,
+<a href=#719 id=719 data-nosnippet>719</a>     {
+<a href=#720 id=720 data-nosnippet>720</a>        open spec <span class="kw">fn </span>sound_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#721 id=721 data-nosnippet>721</a>            <span class="self">self</span>.<span class="number">0</span>.sound_inv() &amp;&amp; <span class="self">self</span>.<span class="number">2</span>.sound_inv()
+<a href=#722 id=722 data-nosnippet>722</a>        }
+<a href=#723 id=723 data-nosnippet>723</a>
+<a href=#724 id=724 data-nosnippet>724</a>        proof <span class="kw">fn </span>lemma_parse_sound_value(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#725 id=725 data-nosnippet>725</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_sound_value(ibuf);
+<a href=#726 id=726 data-nosnippet>726</a>        }
+<a href=#727 id=727 data-nosnippet>727</a>    }
+<a href=#728 id=728 data-nosnippet>728</a>
+<a href=#729 id=729 data-nosnippet>729</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; StrictParser <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#730 id=730 data-nosnippet>730</a>        Field,
+<a href=#731 id=731 data-nosnippet>731</a>        Field::PVal,
+<a href=#732 id=732 data-nosnippet>732</a>        Rest,
+<a href=#733 id=733 data-nosnippet>733</a>        DER,
+<a href=#734 id=734 data-nosnippet>734</a>    &gt; <span class="kw">where </span>Field: StrictParser, Rest: StrictParser {
+<a href=#735 id=735 data-nosnippet>735</a>        open spec <span class="kw">fn </span>strict_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#736 id=736 data-nosnippet>736</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).strict_inv()
+<a href=#737 id=737 data-nosnippet>737</a>        }
+<a href=#738 id=738 data-nosnippet>738</a>
+<a href=#739 id=739 data-nosnippet>739</a>        proof <span class="kw">fn </span>lemma_parse_strict_consumption(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: Seq&lt;u8&gt;) {
+<a href=#740 id=740 data-nosnippet>740</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
+<a href=#741 id=741 data-nosnippet>741</a>                <span class="self">self</span>.<span class="number">0</span>,
+<a href=#742 id=742 data-nosnippet>742</a>                <span class="self">self</span>.<span class="number">1</span>,
+<a href=#743 id=743 data-nosnippet>743</a>                <span class="self">self</span>.<span class="number">2</span>,
+<a href=#744 id=744 data-nosnippet>744</a>            ).lemma_parse_strict_consumption(ibuf);
+<a href=#745 id=745 data-nosnippet>745</a>        }
+<a href=#746 id=746 data-nosnippet>746</a>    }
+<a href=#747 id=747 data-nosnippet>747</a>
+<a href=#748 id=748 data-nosnippet>748</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NonTailFmt <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#749 id=749 data-nosnippet>749</a>        Field,
+<a href=#750 id=750 data-nosnippet>750</a>        Field::SValue,
+<a href=#751 id=751 data-nosnippet>751</a>        Rest,
+<a href=#752 id=752 data-nosnippet>752</a>        DER,
+<a href=#753 id=753 data-nosnippet>753</a>    &gt; <span class="kw">where </span>Field: NonTailFmt, Rest: NonTailFmt {
+<a href=#754 id=754 data-nosnippet>754</a>        open spec <span class="kw">fn </span>serialize_dps_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#755 id=755 data-nosnippet>755</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).serialize_dps_inv()
+<a href=#756 id=756 data-nosnippet>756</a>        }
+<a href=#757 id=757 data-nosnippet>757</a>
+<a href=#758 id=758 data-nosnippet>758</a>        proof <span class="kw">fn </span>lemma_serialize_dps_prepend(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
+<a href=#759 id=759 data-nosnippet>759</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_dps_prepend(
+<a href=#760 id=760 data-nosnippet>760</a>                v,
+<a href=#761 id=761 data-nosnippet>761</a>                obuf,
+<a href=#762 id=762 data-nosnippet>762</a>            );
+<a href=#763 id=763 data-nosnippet>763</a>        }
+<a href=#764 id=764 data-nosnippet>764</a>
+<a href=#765 id=765 data-nosnippet>765</a>        proof <span class="kw">fn </span>lemma_serialize_dps_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SValue, obuf: Seq&lt;u8&gt;) {
+<a href=#766 id=766 data-nosnippet>766</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_dps_len(
+<a href=#767 id=767 data-nosnippet>767</a>                v,
+<a href=#768 id=768 data-nosnippet>768</a>                obuf,
+<a href=#769 id=769 data-nosnippet>769</a>            );
+<a href=#770 id=770 data-nosnippet>770</a>        }
+<a href=#771 id=771 data-nosnippet>771</a>    }
+<a href=#772 id=772 data-nosnippet>772</a>
+<a href=#773 id=773 data-nosnippet>773</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; GoodSerializer <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#774 id=774 data-nosnippet>774</a>        Field,
+<a href=#775 id=775 data-nosnippet>775</a>        Field::SVal,
+<a href=#776 id=776 data-nosnippet>776</a>        Rest,
+<a href=#777 id=777 data-nosnippet>777</a>        DER,
+<a href=#778 id=778 data-nosnippet>778</a>    &gt; <span class="kw">where </span>Field: GoodSerializer, Rest: GoodSerializer {
+<a href=#779 id=779 data-nosnippet>779</a>        open spec <span class="kw">fn </span>serialize_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#780 id=780 data-nosnippet>780</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).serialize_inv()
+<a href=#781 id=781 data-nosnippet>781</a>        }
+<a href=#782 id=782 data-nosnippet>782</a>
+<a href=#783 id=783 data-nosnippet>783</a>        proof <span class="kw">fn </span>lemma_serialize_len(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#784 id=784 data-nosnippet>784</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_len(v);
+<a href=#785 id=785 data-nosnippet>785</a>        }
+<a href=#786 id=786 data-nosnippet>786</a>    }
+<a href=#787 id=787 data-nosnippet>787</a>
+<a href=#788 id=788 data-nosnippet>788</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; SPRoundTripDps <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#789 id=789 data-nosnippet>789</a>        Field,
+<a href=#790 id=790 data-nosnippet>790</a>        Field::T,
+<a href=#791 id=791 data-nosnippet>791</a>        Rest,
+<a href=#792 id=792 data-nosnippet>792</a>        DER,
+<a href=#793 id=793 data-nosnippet>793</a>    &gt; <span class="kw">where </span>Field: SPRoundTripDps + NonTailFmt, Rest: SPRoundTripDps {
+<a href=#794 id=794 data-nosnippet>794</a>        open spec <span class="kw">fn </span>unambiguous(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#795 id=795 data-nosnippet>795</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).unambiguous()
+<a href=#796 id=796 data-nosnippet>796</a>        }
+<a href=#797 id=797 data-nosnippet>797</a>
+<a href=#798 id=798 data-nosnippet>798</a>        proof <span class="kw">fn </span>theorem_serialize_dps_parse_roundtrip(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::T, obuf: Seq&lt;u8&gt;) {
+<a href=#799 id=799 data-nosnippet>799</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
+<a href=#800 id=800 data-nosnippet>800</a>                <span class="self">self</span>.<span class="number">0</span>,
+<a href=#801 id=801 data-nosnippet>801</a>                <span class="self">self</span>.<span class="number">1</span>,
+<a href=#802 id=802 data-nosnippet>802</a>                <span class="self">self</span>.<span class="number">2</span>,
+<a href=#803 id=803 data-nosnippet>803</a>            ).theorem_serialize_dps_parse_roundtrip(v, obuf);
+<a href=#804 id=804 data-nosnippet>804</a>        }
+<a href=#805 id=805 data-nosnippet>805</a>    }
+<a href=#806 id=806 data-nosnippet>806</a>
+<a href=#807 id=807 data-nosnippet>807</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NoLookAhead <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#808 id=808 data-nosnippet>808</a>        Field,
+<a href=#809 id=809 data-nosnippet>809</a>        Field::PVal,
+<a href=#810 id=810 data-nosnippet>810</a>        Rest,
+<a href=#811 id=811 data-nosnippet>811</a>        DER,
+<a href=#812 id=812 data-nosnippet>812</a>    &gt; <span class="kw">where
+<a href=#813 id=813 data-nosnippet>813</a>        </span>Field: SpecByteLen + NoLookAhead&lt;PVal = Field::T&gt;,
+<a href=#814 id=814 data-nosnippet>814</a>        Rest: SpecByteLen + NoLookAhead&lt;PVal = Rest::T&gt;,
+<a href=#815 id=815 data-nosnippet>815</a>     {
+<a href=#816 id=816 data-nosnippet>816</a>        open spec <span class="kw">fn </span>no_lookahead_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#817 id=817 data-nosnippet>817</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).no_lookahead_inv()
+<a href=#818 id=818 data-nosnippet>818</a>        }
+<a href=#819 id=819 data-nosnippet>819</a>
+<a href=#820 id=820 data-nosnippet>820</a>        proof <span class="kw">fn </span>lemma_no_lookahead(<span class="kw-2">&amp;</span><span class="self">self</span>, i1: Seq&lt;u8&gt;, i2: Seq&lt;u8&gt;) {
+<a href=#821 id=821 data-nosnippet>821</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_no_lookahead(i1, i2);
+<a href=#822 id=822 data-nosnippet>822</a>        }
+<a href=#823 id=823 data-nosnippet>823</a>    }
+<a href=#824 id=824 data-nosnippet>824</a>
+<a href=#825 id=825 data-nosnippet>825</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; NonMalleable <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#826 id=826 data-nosnippet>826</a>        Field,
+<a href=#827 id=827 data-nosnippet>827</a>        Field::PVal,
+<a href=#828 id=828 data-nosnippet>828</a>        Rest,
+<a href=#829 id=829 data-nosnippet>829</a>        DER,
+<a href=#830 id=830 data-nosnippet>830</a>    &gt; <span class="kw">where
+<a href=#831 id=831 data-nosnippet>831</a>        </span>Field: SpecByteLen + SoundParser&lt;PVal = Field::T&gt; + NonMalleable,
+<a href=#832 id=832 data-nosnippet>832</a>        Rest: SpecByteLen + SoundParser&lt;PVal = Rest::T&gt; + NonMalleable,
+<a href=#833 id=833 data-nosnippet>833</a>     {
+<a href=#834 id=834 data-nosnippet>834</a>        open spec <span class="kw">fn </span>nonmal_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#835 id=835 data-nosnippet>835</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).nonmal_inv()
+<a href=#836 id=836 data-nosnippet>836</a>        }
+<a href=#837 id=837 data-nosnippet>837</a>
+<a href=#838 id=838 data-nosnippet>838</a>        proof <span class="kw">fn </span>lemma_parse_non_malleable(<span class="kw-2">&amp;</span><span class="self">self</span>, buf1: Seq&lt;u8&gt;, buf2: Seq&lt;u8&gt;) {
+<a href=#839 id=839 data-nosnippet>839</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_parse_non_malleable(
+<a href=#840 id=840 data-nosnippet>840</a>                buf1,
+<a href=#841 id=841 data-nosnippet>841</a>                buf2,
+<a href=#842 id=842 data-nosnippet>842</a>            );
+<a href=#843 id=843 data-nosnippet>843</a>        }
+<a href=#844 id=844 data-nosnippet>844</a>    }
+<a href=#845 id=845 data-nosnippet>845</a>
+<a href=#846 id=846 data-nosnippet>846</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; EquivSerializersGeneral <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#847 id=847 data-nosnippet>847</a>        Field,
+<a href=#848 id=848 data-nosnippet>848</a>        Field::SVal,
+<a href=#849 id=849 data-nosnippet>849</a>        Rest,
+<a href=#850 id=850 data-nosnippet>850</a>        DER,
+<a href=#851 id=851 data-nosnippet>851</a>    &gt; <span class="kw">where
+<a href=#852 id=852 data-nosnippet>852</a>        </span>Field: SpecByteLen + EquivSerializersGeneral&lt;SVal = Field::T&gt;,
+<a href=#853 id=853 data-nosnippet>853</a>        Rest: SpecByteLen + EquivSerializersGeneral&lt;SVal = Rest::T&gt;,
+<a href=#854 id=854 data-nosnippet>854</a>     {
+<a href=#855 id=855 data-nosnippet>855</a>        open spec <span class="kw">fn </span>equiv_general_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#856 id=856 data-nosnippet>856</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).equiv_general_inv()
+<a href=#857 id=857 data-nosnippet>857</a>        }
+<a href=#858 id=858 data-nosnippet>858</a>
+<a href=#859 id=859 data-nosnippet>859</a>        proof <span class="kw">fn </span>lemma_serialize_equiv(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal, obuf: Seq&lt;u8&gt;) {
+<a href=#860 id=860 data-nosnippet>860</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).lemma_serialize_equiv(
+<a href=#861 id=861 data-nosnippet>861</a>                v,
+<a href=#862 id=862 data-nosnippet>862</a>                obuf,
+<a href=#863 id=863 data-nosnippet>863</a>            );
+<a href=#864 id=864 data-nosnippet>864</a>        }
+<a href=#865 id=865 data-nosnippet>865</a>    }
+<a href=#866 id=866 data-nosnippet>866</a>
+<a href=#867 id=867 data-nosnippet>867</a>    <span class="kw">impl</span>&lt;Field, Rest, <span class="kw">const </span>DER: bool&gt; EquivSerializers <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#868 id=868 data-nosnippet>868</a>        Field,
+<a href=#869 id=869 data-nosnippet>869</a>        Field::SVal,
+<a href=#870 id=870 data-nosnippet>870</a>        Rest,
+<a href=#871 id=871 data-nosnippet>871</a>        DER,
+<a href=#872 id=872 data-nosnippet>872</a>    &gt; <span class="kw">where
+<a href=#873 id=873 data-nosnippet>873</a>        </span>Field: SpecByteLen + EquivSerializersGeneral&lt;SVal = Field::T&gt;,
+<a href=#874 id=874 data-nosnippet>874</a>        Rest: SpecByteLen + EquivSerializers&lt;SVal = Rest::T&gt;,
+<a href=#875 id=875 data-nosnippet>875</a>     {
+<a href=#876 id=876 data-nosnippet>876</a>        open spec <span class="kw">fn </span>equiv_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#877 id=877 data-nosnippet>877</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(<span class="self">self</span>.<span class="number">0</span>, <span class="self">self</span>.<span class="number">1</span>, <span class="self">self</span>.<span class="number">2</span>).equiv_inv()
+<a href=#878 id=878 data-nosnippet>878</a>        }
+<a href=#879 id=879 data-nosnippet>879</a>
+<a href=#880 id=880 data-nosnippet>880</a>        proof <span class="kw">fn </span>lemma_serialize_equiv_on_empty(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="self">Self</span>::SVal) {
+<a href=#881 id=881 data-nosnippet>881</a>            defaulted_fmt::&lt;Field, Rest, DER&gt;(
+<a href=#882 id=882 data-nosnippet>882</a>                <span class="self">self</span>.<span class="number">0</span>,
+<a href=#883 id=883 data-nosnippet>883</a>                <span class="self">self</span>.<span class="number">1</span>,
+<a href=#884 id=884 data-nosnippet>884</a>                <span class="self">self</span>.<span class="number">2</span>,
+<a href=#885 id=885 data-nosnippet>885</a>            ).lemma_serialize_equiv_on_empty(v);
+<a href=#886 id=886 data-nosnippet>886</a>        }
+<a href=#887 id=887 data-nosnippet>887</a>    }
+<a href=#888 id=888 data-nosnippet>888</a>
+<a href=#889 id=889 data-nosnippet>889</a>}
+<a href=#890 id=890 data-nosnippet>890</a>
+<a href=#891 id=891 data-nosnippet>891</a><span class="comment">/*
+<a href=#892 id=892 data-nosnippet>892</a> * TODO: Due to technical reasons, `DefaultedFmt` now only support `Structural` (in the Verus sense) types. To support non-Structural types,
+<a href=#893 id=893 data-nosnippet>893</a> * `DefaultedFmt` needs to take both the `exec` default value and the `spec` default value, which is the `DeepView` of the `exec` default value.
+<a href=#894 id=894 data-nosnippet>894</a> */
+<a href=#895 id=895 data-nosnippet>895</a>
+<a href=#896 id=896 data-nosnippet>896</a></span><span class="kw">impl</span>&lt;I, Field, Rest, <span class="kw">const </span>DER: bool&gt; Parser&lt;I&gt; <span class="kw">for </span>DefaultedFmt&lt;Field, Field::T, Rest, DER&gt; <span class="kw">where
+<a href=#897 id=897 data-nosnippet>897</a>    </span>I: InputBuf,
+<a href=#898 id=898 data-nosnippet>898</a>    Field: Parser&lt;I, PT = Field::T&gt; + SafeParser&lt;PVal = Field::T&gt; + SpecByteLen,
+<a href=#899 id=899 data-nosnippet>899</a>    Rest: Parser&lt;I&gt; + SafeParser&lt;PVal = Rest::T&gt; + SpecByteLen,
+<a href=#900 id=900 data-nosnippet>900</a>    Field::T: DeepView&lt;V = Field::T&gt; + PartialEq + Structural + Copy,
+<a href=#901 id=901 data-nosnippet>901</a> {
+<a href=#902 id=902 data-nosnippet>902</a>    <span class="kw">type </span>PT = (Field::PT, Rest::PT);
+<a href=#903 id=903 data-nosnippet>903</a>
+<a href=#904 id=904 data-nosnippet>904</a>    <span class="attr">#[verifier::prophetic]
+<a href=#905 id=905 data-nosnippet>905</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#906 id=906 data-nosnippet>906</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
+<a href=#907 id=907 data-nosnippet>907</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.safe_inv()
+<a href=#908 id=908 data-nosnippet>908</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
+<a href=#909 id=909 data-nosnippet>909</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.safe_inv()
+<a href=#910 id=910 data-nosnippet>910</a>        &amp;&amp;&amp; forall|v: Field::T| v.deep_view() == v
+<a href=#911 id=911 data-nosnippet>911</a>        &amp;&amp;&amp; vstd::laws_eq::obeys_concrete_eq::&lt;Field::T&gt;()
+<a href=#912 id=912 data-nosnippet>912</a>    }
+<a href=#913 id=913 data-nosnippet>913</a>
+<a href=#914 id=914 data-nosnippet>914</a>    <span class="kw">fn </span>parse(<span class="kw-2">&amp;</span><span class="self">self</span>, ibuf: <span class="kw-2">&amp;</span>I) -&gt; PResult&lt;<span class="self">Self</span>::PT&gt; {
+<a href=#915 id=915 data-nosnippet>915</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::spec::SafeParser::lemma_parse_safe;
 <a href=#916 id=916 data-nosnippet>916</a>
-<a href=#917 id=917 data-nosnippet>917</a>        <span class="kw">if </span>DER {
-<a href=#918 id=918 data-nosnippet>918</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = field {
-<a href=#919 id=919 data-nosnippet>919</a>                <span class="kw">if </span>v == <span class="self">self</span>.<span class="number">1 </span>{
-<a href=#920 id=920 data-nosnippet>920</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ParseError::non_canonical());
-<a href=#921 id=921 data-nosnippet>921</a>                }
-<a href=#922 id=922 data-nosnippet>922</a>            }
-<a href=#923 id=923 data-nosnippet>923</a>        }
-<a href=#924 id=924 data-nosnippet>924</a>        <span class="kw">let </span>field = <span class="kw">match </span>field {
-<a href=#925 id=925 data-nosnippet>925</a>            <span class="prelude-val">Some</span>(v) =&gt; v,
-<a href=#926 id=926 data-nosnippet>926</a>            <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.<span class="number">1</span>,
-<a href=#927 id=927 data-nosnippet>927</a>        };
-<a href=#928 id=928 data-nosnippet>928</a>
-<a href=#929 id=929 data-nosnippet>929</a>        <span class="prelude-val">Ok</span>((n, (field, rest)))
-<a href=#930 id=930 data-nosnippet>930</a>    }
-<a href=#931 id=931 data-nosnippet>931</a>}
+<a href=#917 id=917 data-nosnippet>917</a>        reveal(vstd::laws_eq::obeys_concrete_eq);
+<a href=#918 id=918 data-nosnippet>918</a>
+<a href=#919 id=919 data-nosnippet>919</a>        <span class="kw">let </span>(n, (field, rest)) = Optional(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">2</span>).parse(ibuf)<span class="question-mark">?</span>;
+<a href=#920 id=920 data-nosnippet>920</a>
+<a href=#921 id=921 data-nosnippet>921</a>        <span class="kw">if </span>DER {
+<a href=#922 id=922 data-nosnippet>922</a>            <span class="kw">if let </span><span class="prelude-val">Some</span>(v) = field {
+<a href=#923 id=923 data-nosnippet>923</a>                <span class="kw">if </span>v == <span class="self">self</span>.<span class="number">1 </span>{
+<a href=#924 id=924 data-nosnippet>924</a>                    <span class="kw">return </span><span class="prelude-val">Err</span>(ParseError::non_canonical());
+<a href=#925 id=925 data-nosnippet>925</a>                }
+<a href=#926 id=926 data-nosnippet>926</a>            }
+<a href=#927 id=927 data-nosnippet>927</a>        }
+<a href=#928 id=928 data-nosnippet>928</a>        <span class="kw">let </span>field = <span class="kw">match </span>field {
+<a href=#929 id=929 data-nosnippet>929</a>            <span class="prelude-val">Some</span>(v) =&gt; v,
+<a href=#930 id=930 data-nosnippet>930</a>            <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.<span class="number">1</span>,
+<a href=#931 id=931 data-nosnippet>931</a>        };
 <a href=#932 id=932 data-nosnippet>932</a>
-<a href=#933 id=933 data-nosnippet>933</a><span class="kw">impl</span>&lt;Output: OutputBuf, Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; Serializer&lt;
-<a href=#934 id=934 data-nosnippet>934</a>    Output,
-<a href=#935 id=935 data-nosnippet>935</a>    (Default, R),
-<a href=#936 id=936 data-nosnippet>936</a>&gt; <span class="kw">for </span>DefaultedFmt&lt;Field, Default, Rest, DER&gt; <span class="kw">where
-<a href=#937 id=937 data-nosnippet>937</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + Serializer&lt;Output, Default&gt;,
-<a href=#938 id=938 data-nosnippet>938</a>    Rest: SpecByteLen&lt;T = R::V&gt; + Serializer&lt;Output, R&gt;,
-<a href=#939 id=939 data-nosnippet>939</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
-<a href=#940 id=940 data-nosnippet>940</a>    R: DeepView,
-<a href=#941 id=941 data-nosnippet>941</a> {
-<a href=#942 id=942 data-nosnippet>942</a>    <span class="attr">#[verifier::prophetic]
-<a href=#943 id=943 data-nosnippet>943</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#944 id=944 data-nosnippet>944</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
-<a href=#945 id=945 data-nosnippet>945</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
-<a href=#946 id=946 data-nosnippet>946</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
-<a href=#947 id=947 data-nosnippet>947</a>    }
-<a href=#948 id=948 data-nosnippet>948</a>
-<a href=#949 id=949 data-nosnippet>949</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R), obuf: <span class="kw-2">&amp;mut </span>Output) {
-<a href=#950 id=950 data-nosnippet>950</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
-<a href=#951 id=951 data-nosnippet>951</a>
-<a href=#952 id=952 data-nosnippet>952</a>        <span class="kw">if </span>v.<span class="number">0 </span>!= <span class="self">self</span>.<span class="number">1 </span>{
-<a href=#953 id=953 data-nosnippet>953</a>            <span class="self">self</span>.<span class="number">0</span>.serialize_into(<span class="kw-2">&amp;</span>v.<span class="number">0</span>, obuf);
-<a href=#954 id=954 data-nosnippet>954</a>        }
-<a href=#955 id=955 data-nosnippet>955</a>        <span class="self">self</span>.<span class="number">2</span>.serialize_into(<span class="kw-2">&amp;</span>v.<span class="number">1</span>, obuf);
-<a href=#956 id=956 data-nosnippet>956</a>    }
-<a href=#957 id=957 data-nosnippet>957</a>}
-<a href=#958 id=958 data-nosnippet>958</a>
-<a href=#959 id=959 data-nosnippet>959</a><span class="kw">impl</span>&lt;Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; Prepare&lt;(Default, R)&gt; <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#960 id=960 data-nosnippet>960</a>    Field,
-<a href=#961 id=961 data-nosnippet>961</a>    Default,
-<a href=#962 id=962 data-nosnippet>962</a>    Rest,
-<a href=#963 id=963 data-nosnippet>963</a>    DER,
-<a href=#964 id=964 data-nosnippet>964</a>&gt; <span class="kw">where
-<a href=#965 id=965 data-nosnippet>965</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + Prepare&lt;Default&gt;,
-<a href=#966 id=966 data-nosnippet>966</a>    Rest: SpecByteLen&lt;T = R::V&gt; + Prepare&lt;R&gt;,
-<a href=#967 id=967 data-nosnippet>967</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
-<a href=#968 id=968 data-nosnippet>968</a>    R: DeepView,
-<a href=#969 id=969 data-nosnippet>969</a> {
-<a href=#970 id=970 data-nosnippet>970</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#971 id=971 data-nosnippet>971</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
-<a href=#972 id=972 data-nosnippet>972</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
-<a href=#973 id=973 data-nosnippet>973</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
-<a href=#974 id=974 data-nosnippet>974</a>    }
-<a href=#975 id=975 data-nosnippet>975</a>
-<a href=#976 id=976 data-nosnippet>976</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R)) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#977 id=977 data-nosnippet>977</a>        <span class="kw">let </span>n0 = <span class="kw">if </span>v.<span class="number">0 </span>== <span class="self">self</span>.<span class="number">1 </span>{
-<a href=#978 id=978 data-nosnippet>978</a>            <span class="number">0
-<a href=#979 id=979 data-nosnippet>979</a>        </span>} <span class="kw">else </span>{
-<a href=#980 id=980 data-nosnippet>980</a>            <span class="self">self</span>.<span class="number">0</span>.prepare(<span class="kw-2">&amp;</span>v.<span class="number">0</span>)<span class="question-mark">?
-<a href=#981 id=981 data-nosnippet>981</a>        </span>};
-<a href=#982 id=982 data-nosnippet>982</a>        <span class="kw">let </span>n1 = <span class="self">self</span>.<span class="number">2</span>.prepare(<span class="kw-2">&amp;</span>v.<span class="number">1</span>)<span class="question-mark">?</span>;
-<a href=#983 id=983 data-nosnippet>983</a>        <span class="kw">let </span>total = n0.checked_add(n1).ok_or(PreSerializeError::length_too_large())<span class="question-mark">?</span>;
-<a href=#984 id=984 data-nosnippet>984</a>        <span class="prelude-val">Ok</span>(total)
-<a href=#985 id=985 data-nosnippet>985</a>    }
-<a href=#986 id=986 data-nosnippet>986</a>}
-<a href=#987 id=987 data-nosnippet>987</a>
-<a href=#988 id=988 data-nosnippet>988</a><span class="kw">impl</span>&lt;Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;(Default, R)&gt; <span class="kw">for </span>DefaultedFmt&lt;
-<a href=#989 id=989 data-nosnippet>989</a>    Field,
-<a href=#990 id=990 data-nosnippet>990</a>    Default,
-<a href=#991 id=991 data-nosnippet>991</a>    Rest,
-<a href=#992 id=992 data-nosnippet>992</a>    DER,
-<a href=#993 id=993 data-nosnippet>993</a>&gt; <span class="kw">where
-<a href=#994 id=994 data-nosnippet>994</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + ByteLen&lt;Default&gt;,
-<a href=#995 id=995 data-nosnippet>995</a>    Rest: SpecByteLen&lt;T = R::V&gt; + ByteLen&lt;R&gt;,
-<a href=#996 id=996 data-nosnippet>996</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
-<a href=#997 id=997 data-nosnippet>997</a>    R: DeepView,
-<a href=#998 id=998 data-nosnippet>998</a> {
-<a href=#999 id=999 data-nosnippet>999</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#1000 id=1000 data-nosnippet>1000</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
-<a href=#1001 id=1001 data-nosnippet>1001</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
-<a href=#1002 id=1002 data-nosnippet>1002</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
-<a href=#1003 id=1003 data-nosnippet>1003</a>    }
-<a href=#1004 id=1004 data-nosnippet>1004</a>
-<a href=#1005 id=1005 data-nosnippet>1005</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R)) -&gt; usize {
-<a href=#1006 id=1006 data-nosnippet>1006</a>        <span class="kw">let </span>n0 = <span class="kw">if </span>v.<span class="number">0 </span>== <span class="self">self</span>.<span class="number">1 </span>{
-<a href=#1007 id=1007 data-nosnippet>1007</a>            <span class="number">0
-<a href=#1008 id=1008 data-nosnippet>1008</a>        </span>} <span class="kw">else </span>{
-<a href=#1009 id=1009 data-nosnippet>1009</a>            <span class="self">self</span>.<span class="number">0</span>.length(<span class="kw-2">&amp;</span>v.<span class="number">0</span>)
-<a href=#1010 id=1010 data-nosnippet>1010</a>        };
-<a href=#1011 id=1011 data-nosnippet>1011</a>        <span class="kw">let </span>n1 = <span class="self">self</span>.<span class="number">2</span>.length(<span class="kw-2">&amp;</span>v.<span class="number">1</span>);
-<a href=#1012 id=1012 data-nosnippet>1012</a>        n0 + n1
-<a href=#1013 id=1013 data-nosnippet>1013</a>    }
-<a href=#1014 id=1014 data-nosnippet>1014</a>}
-<a href=#1015 id=1015 data-nosnippet>1015</a>
-<a href=#1016 id=1016 data-nosnippet>1016</a>} <span class="comment">// verus!
+<a href=#933 id=933 data-nosnippet>933</a>        <span class="prelude-val">Ok</span>((n, (field, rest)))
+<a href=#934 id=934 data-nosnippet>934</a>    }
+<a href=#935 id=935 data-nosnippet>935</a>}
+<a href=#936 id=936 data-nosnippet>936</a>
+<a href=#937 id=937 data-nosnippet>937</a><span class="kw">impl</span>&lt;Output: OutputBuf, Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; Serializer&lt;
+<a href=#938 id=938 data-nosnippet>938</a>    Output,
+<a href=#939 id=939 data-nosnippet>939</a>    (Default, R),
+<a href=#940 id=940 data-nosnippet>940</a>&gt; <span class="kw">for </span>DefaultedFmt&lt;Field, Default, Rest, DER&gt; <span class="kw">where
+<a href=#941 id=941 data-nosnippet>941</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + Serializer&lt;Output, Default&gt;,
+<a href=#942 id=942 data-nosnippet>942</a>    Rest: SpecByteLen&lt;T = R::V&gt; + Serializer&lt;Output, R&gt;,
+<a href=#943 id=943 data-nosnippet>943</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
+<a href=#944 id=944 data-nosnippet>944</a>    R: DeepView,
+<a href=#945 id=945 data-nosnippet>945</a> {
+<a href=#946 id=946 data-nosnippet>946</a>    <span class="attr">#[verifier::prophetic]
+<a href=#947 id=947 data-nosnippet>947</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#948 id=948 data-nosnippet>948</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
+<a href=#949 id=949 data-nosnippet>949</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
+<a href=#950 id=950 data-nosnippet>950</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
+<a href=#951 id=951 data-nosnippet>951</a>    }
+<a href=#952 id=952 data-nosnippet>952</a>
+<a href=#953 id=953 data-nosnippet>953</a>    <span class="kw">fn </span>serialize_into(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R), obuf: <span class="kw-2">&amp;mut </span>Output) {
+<a href=#954 id=954 data-nosnippet>954</a>        broadcast <span class="kw">use </span><span class="kw">crate</span>::core::exec::output::outbuf_lemmas;
+<a href=#955 id=955 data-nosnippet>955</a>
+<a href=#956 id=956 data-nosnippet>956</a>        <span class="kw">if </span>v.<span class="number">0 </span>!= <span class="self">self</span>.<span class="number">1 </span>{
+<a href=#957 id=957 data-nosnippet>957</a>            <span class="self">self</span>.<span class="number">0</span>.serialize_into(<span class="kw-2">&amp;</span>v.<span class="number">0</span>, obuf);
+<a href=#958 id=958 data-nosnippet>958</a>        }
+<a href=#959 id=959 data-nosnippet>959</a>        <span class="self">self</span>.<span class="number">2</span>.serialize_into(<span class="kw-2">&amp;</span>v.<span class="number">1</span>, obuf);
+<a href=#960 id=960 data-nosnippet>960</a>    }
+<a href=#961 id=961 data-nosnippet>961</a>}
+<a href=#962 id=962 data-nosnippet>962</a>
+<a href=#963 id=963 data-nosnippet>963</a><span class="kw">impl</span>&lt;Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; Prepare&lt;(Default, R)&gt; <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#964 id=964 data-nosnippet>964</a>    Field,
+<a href=#965 id=965 data-nosnippet>965</a>    Default,
+<a href=#966 id=966 data-nosnippet>966</a>    Rest,
+<a href=#967 id=967 data-nosnippet>967</a>    DER,
+<a href=#968 id=968 data-nosnippet>968</a>&gt; <span class="kw">where
+<a href=#969 id=969 data-nosnippet>969</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + Prepare&lt;Default&gt;,
+<a href=#970 id=970 data-nosnippet>970</a>    Rest: SpecByteLen&lt;T = R::V&gt; + Prepare&lt;R&gt;,
+<a href=#971 id=971 data-nosnippet>971</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
+<a href=#972 id=972 data-nosnippet>972</a>    R: DeepView,
+<a href=#973 id=973 data-nosnippet>973</a> {
+<a href=#974 id=974 data-nosnippet>974</a>    <span class="attr">#[verifier::prophetic]
+<a href=#975 id=975 data-nosnippet>975</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#976 id=976 data-nosnippet>976</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
+<a href=#977 id=977 data-nosnippet>977</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
+<a href=#978 id=978 data-nosnippet>978</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
+<a href=#979 id=979 data-nosnippet>979</a>    }
+<a href=#980 id=980 data-nosnippet>980</a>
+<a href=#981 id=981 data-nosnippet>981</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R)) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#982 id=982 data-nosnippet>982</a>        <span class="kw">let </span>n0 = <span class="kw">if </span>v.<span class="number">0 </span>== <span class="self">self</span>.<span class="number">1 </span>{
+<a href=#983 id=983 data-nosnippet>983</a>            <span class="number">0
+<a href=#984 id=984 data-nosnippet>984</a>        </span>} <span class="kw">else </span>{
+<a href=#985 id=985 data-nosnippet>985</a>            <span class="self">self</span>.<span class="number">0</span>.prepare(<span class="kw-2">&amp;</span>v.<span class="number">0</span>)<span class="question-mark">?
+<a href=#986 id=986 data-nosnippet>986</a>        </span>};
+<a href=#987 id=987 data-nosnippet>987</a>        <span class="kw">let </span>n1 = <span class="self">self</span>.<span class="number">2</span>.prepare(<span class="kw-2">&amp;</span>v.<span class="number">1</span>)<span class="question-mark">?</span>;
+<a href=#988 id=988 data-nosnippet>988</a>        <span class="kw">let </span>total = n0.checked_add(n1).ok_or(PreSerializeError::length_too_large())<span class="question-mark">?</span>;
+<a href=#989 id=989 data-nosnippet>989</a>        <span class="prelude-val">Ok</span>(total)
+<a href=#990 id=990 data-nosnippet>990</a>    }
+<a href=#991 id=991 data-nosnippet>991</a>}
+<a href=#992 id=992 data-nosnippet>992</a>
+<a href=#993 id=993 data-nosnippet>993</a><span class="kw">impl</span>&lt;Field, Default, Rest, R, <span class="kw">const </span>DER: bool&gt; ByteLen&lt;(Default, R)&gt; <span class="kw">for </span>DefaultedFmt&lt;
+<a href=#994 id=994 data-nosnippet>994</a>    Field,
+<a href=#995 id=995 data-nosnippet>995</a>    Default,
+<a href=#996 id=996 data-nosnippet>996</a>    Rest,
+<a href=#997 id=997 data-nosnippet>997</a>    DER,
+<a href=#998 id=998 data-nosnippet>998</a>&gt; <span class="kw">where
+<a href=#999 id=999 data-nosnippet>999</a>    </span>Field: SpecByteLen&lt;T = Default&gt; + ByteLen&lt;Default&gt;,
+<a href=#1000 id=1000 data-nosnippet>1000</a>    Rest: SpecByteLen&lt;T = R::V&gt; + ByteLen&lt;R&gt;,
+<a href=#1001 id=1001 data-nosnippet>1001</a>    Default: DeepView&lt;V = Default&gt; + PartialEq + Structural + Copy,
+<a href=#1002 id=1002 data-nosnippet>1002</a>    R: DeepView,
+<a href=#1003 id=1003 data-nosnippet>1003</a> {
+<a href=#1004 id=1004 data-nosnippet>1004</a>    <span class="attr">#[verifier::prophetic]
+<a href=#1005 id=1005 data-nosnippet>1005</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#1006 id=1006 data-nosnippet>1006</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">0</span>.exec_inv()
+<a href=#1007 id=1007 data-nosnippet>1007</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">2</span>.exec_inv()
+<a href=#1008 id=1008 data-nosnippet>1008</a>        &amp;&amp;&amp; forall|v: Default| v.deep_view() == v
+<a href=#1009 id=1009 data-nosnippet>1009</a>    }
+<a href=#1010 id=1010 data-nosnippet>1010</a>
+<a href=#1011 id=1011 data-nosnippet>1011</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, v: <span class="kw-2">&amp;</span>(Default, R)) -&gt; usize {
+<a href=#1012 id=1012 data-nosnippet>1012</a>        <span class="kw">let </span>n0 = <span class="kw">if </span>v.<span class="number">0 </span>== <span class="self">self</span>.<span class="number">1 </span>{
+<a href=#1013 id=1013 data-nosnippet>1013</a>            <span class="number">0
+<a href=#1014 id=1014 data-nosnippet>1014</a>        </span>} <span class="kw">else </span>{
+<a href=#1015 id=1015 data-nosnippet>1015</a>            <span class="self">self</span>.<span class="number">0</span>.length(<span class="kw-2">&amp;</span>v.<span class="number">0</span>)
+<a href=#1016 id=1016 data-nosnippet>1016</a>        };
+<a href=#1017 id=1017 data-nosnippet>1017</a>        <span class="kw">let </span>n1 = <span class="self">self</span>.<span class="number">2</span>.length(<span class="kw-2">&amp;</span>v.<span class="number">1</span>);
+<a href=#1018 id=1018 data-nosnippet>1018</a>        n0 + n1
+<a href=#1019 id=1019 data-nosnippet>1019</a>    }
+<a href=#1020 id=1020 data-nosnippet>1020</a>}
+<a href=#1021 id=1021 data-nosnippet>1021</a>
+<a href=#1022 id=1022 data-nosnippet>1022</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>
