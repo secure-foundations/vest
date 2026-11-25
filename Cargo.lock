@@ -1451,7 +1451,7 @@ dependencies = [
 
 [[package]]
 name = "vest"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "ariadne",
  "clap",
@@ -1465,7 +1465,7 @@ dependencies = [
 
 [[package]]
 name = "vest_asn1"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
 ]
@@ -1524,7 +1524,7 @@ dependencies = [
 
 [[package]]
 name = "vest_lib"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "vstd",
 ]

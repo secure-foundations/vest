@@ -8,15 +8,15 @@ The `vest_asn1` compiler itself is ordinary, unverified Rust.
 ## Install and generate
 
 ```console
-cargo install vest_asn1 --version 0.1.0 --locked
+cargo install vest_asn1 --version 0.1.1 --locked
 vest_asn1 schema.asn1 -o generated.rs
 vest_asn1 --rules ber schema.asn1 -o generated_ber.rs
 ```
 
-For this compiler release, use `vest_lib = "=0.2.3"` and
-`vstd = { version = "=0.0.0-2026-10-25-0158", default-features = false }`
+For this compiler release, use `vest_lib = "=0.2.4"` and
+`vstd = { version = "=0.0.0-2026-11-22-0344", default-features = false }`
 in the generated code's project. Verification uses Verus
-`0.2026.10.26.d17fbd0` with Rust `1.99.1`. See the
+`0.2026.11.22.1ce6a59` with Rust `1.100.0`. See the
 [tutorial](https://secure-foundations.github.io/vest/guide/asn1/tutorial.html)
 for a complete project and verification command.
 

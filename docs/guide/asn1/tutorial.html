@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ed68f277.js";
+            window.path_to_searchindex_js = "../searchindex-e2678776.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ec169036.js"></script>
@@ -184,13 +184,13 @@ schema and use them in ordinary Rust and in Verus.
 The overall workflow is much like the <a href="../getting-started.html">Vest DSL</a>.</p>
 <h2 id="setting-up"><a class="header" href="#setting-up">Setting up</a></h2>
 <p>Install Vest’s ASN.1 compiler <code>vest_asn1</code> and create a Rust project:</p>
-<pre><code class="language-console">cargo install vest_asn1 --version 0.1.0 --locked
+<pre><code class="language-console">cargo install vest_asn1 --version 0.1.1 --locked
 cargo new --lib asn1-example
 cd asn1-example
 </code></pre>
 <p>Add the <code>vest_lib</code> and <code>vstd</code> dependencies from
 <a href="../getting-started.html#create-a-project">Setting up</a>. This compiler release
-uses <code>vest_lib</code> 0.2.3 and its matching Verus/vstd versions.</p>
+uses <code>vest_lib</code> 0.2.4 and its matching Verus/vstd versions.</p>
 <h2 id="turn-an-asn1-schema-into-rust"><a class="header" href="#turn-an-asn1-schema-into-rust">Turn an ASN.1 schema into Rust</a></h2>
 <p>We’ll define an ASN.1 module containing a message with a request/response kind and an optional payload of
 1–32 bytes. Save this schema as <code>message.asn1</code> in the project directory:</p>

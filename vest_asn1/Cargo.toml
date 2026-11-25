@@ -1,6 +1,6 @@
 [package]
 name = "vest_asn1"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 description = "Generate formally verified, efficient parsers and serializers from ASN.1 schemas"
@@ -14,7 +14,7 @@ categories = ["command-line-utilities", "development-tools", "parsing"]
 clap = { version = "4.4.7", features = ["derive"] }
 
 [package.metadata.vest]
-vest_lib = "=0.2.3"
+vest_lib = "=0.2.4"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(verus_only)", "cfg(verus_keep_ghost)"] }

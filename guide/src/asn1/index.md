@@ -5,12 +5,12 @@
 are available.
 
 ```console
-cargo install vest_asn1 --version 0.1.0 --locked
+cargo install vest_asn1 --version 0.1.1 --locked
 vest_asn1 schema.asn1 -o generated.rs
 vest_asn1 --rules ber schema.asn1 -o generated_ber.rs
 ```
 
-Version 0.1.0 targets `vest_lib` 0.2.3 and the matching Verus/vstd versions in
+Version 0.1.1 targets `vest_lib` 0.2.4 and the matching Verus/vstd versions in
 the [tutorial](tutorial.md). The compiler emits Rust code with Verus specs and proofs; run Verus
 on the generated code to check those proofs.
 

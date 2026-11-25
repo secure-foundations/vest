@@ -9,14 +9,14 @@ The overall workflow is much like the [Vest DSL](../getting-started.md).
 Install Vest's ASN.1 compiler `vest_asn1` and create a Rust project:
 
 ```console
-cargo install vest_asn1 --version 0.1.0 --locked
+cargo install vest_asn1 --version 0.1.1 --locked
 cargo new --lib asn1-example
 cd asn1-example
 ```
 
 Add the `vest_lib` and `vstd` dependencies from
 [Setting up](../getting-started.md#create-a-project). This compiler release
-uses `vest_lib` 0.2.3 and its matching Verus/vstd versions.
+uses `vest_lib` 0.2.4 and its matching Verus/vstd versions.
 
 ## Turn an ASN.1 schema into Rust
 
