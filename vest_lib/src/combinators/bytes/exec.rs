@@ -171,6 +171,7 @@ impl<I, Len, Inner> Parser<I> for super::ExactLen<Inner, Len> where
         self.0.get()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -190,6 +191,7 @@ impl<I: InputBuf, A, Then> Parser<I> for super::AndThen<A, Then> where
         self.0.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -245,6 +247,7 @@ impl<Len, Inner, InnerST> ByteLen<InnerST> for super::ExactLen<Inner, Len> where
     InnerST: DeepView + ?Sized,
     Inner: ByteLen<InnerST>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -259,6 +262,7 @@ impl<Len, Inner, InnerST> Prepare<InnerST> for super::ExactLen<Inner, Len> where
     InnerST: DeepView + ?Sized,
     Inner: Prepare<InnerST>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -277,6 +281,7 @@ impl<Then, T> Prepare<T> for super::AndThen<Tail, Then> where
     T: DeepView + ?Sized,
     Then: Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -295,6 +300,7 @@ impl<A, Then, ThenST> ByteLen<ThenST> for super::AndThen<A, Then> where
     ThenST: DeepView + ?Sized,
     Then: ByteLen<ThenST>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }

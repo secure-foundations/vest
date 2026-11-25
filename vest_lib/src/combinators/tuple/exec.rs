@@ -21,6 +21,7 @@ impl<I, A, B> Parser<I> for super::Pair<A, B> where
  {
     type PT = (A::PT, B::PT);
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -79,6 +80,7 @@ impl<A, B, TA, TB> Prepare<(TA, TB)> for super::Pair<A, B> where
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -101,6 +103,7 @@ impl<A, B, TA, TB> ByteLen<(TA, TB)> for super::Pair<A, B> where
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -126,6 +129,7 @@ impl<I, A, B> Parser<I> for super::Bind<A, B> where
         self.0.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -180,6 +184,7 @@ impl<A, B, STA, STB> ByteLen<(STA, STB)> for super::Bind<A, B> where
     B::O: ByteLen<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& forall|pb: B::O| #[trigger] pb.exec_inv()
@@ -200,6 +205,7 @@ impl<A, B, STA, STB> Prepare<(STA, STB)> for super::Bind<A, B> where
     B::O: Prepare<STB>,
     B: MapRef<STA, Input = STA::V>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& forall|pb: B::O| #[trigger] pb.exec_inv()

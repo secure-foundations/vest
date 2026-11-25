@@ -25,6 +25,7 @@ impl<I, Inner, M, MRev> Parser<I> for super::Mapped<Inner, BiMap<M, MRev>> where
         self.inner.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }
@@ -61,6 +62,7 @@ impl<Inner, M, MRev, T> Prepare<T> for super::Mapped<Inner, BiMap<M, MRev>> wher
     MRev: SpecMap<Input = T::V> + for <'x>Map<&'x T>,
     Inner: for <'x>Prepare<<MRev as Map<&'x T>>::O>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }
@@ -77,6 +79,7 @@ impl<Inner, M, MRev, T> ByteLen<T> for super::Mapped<Inner, BiMap<M, MRev>> wher
     MRev: SpecMap<Input = T::V> + for <'x>Map<&'x T>,
     Inner: for <'x>ByteLen<<MRev as Map<&'x T>>::O>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.inner.exec_inv()
     }

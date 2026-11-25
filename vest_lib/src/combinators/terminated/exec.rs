@@ -29,6 +29,7 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, false> where
         self.a.min_byte_len().saturating_add(self.b.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         Pair(&self.a, &self.b).exec_inv()
     }
@@ -52,6 +53,7 @@ impl<I, A, B, BVal> Parser<I> for super::Terminated<A, B, BVal, true> where
         self.a.min_byte_len().saturating_add(self.b.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& Pair(&self.a, &self.b).exec_inv()
         &&& forall|v: BVal| v.deep_view() == v
@@ -97,6 +99,7 @@ impl<A, B, BVal, T, const CHECK: bool> ByteLen<T> for super::Terminated<A, B, BV
     A: ByteLen<T>,
     B: ByteLen<BVal>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.a.exec_inv()
         &&& self.b.exec_inv()
@@ -114,6 +117,7 @@ impl<A, B, BVal, T, const CHECK: bool> Prepare<T> for super::Terminated<A, B, BV
     A: Prepare<T>,
     B: Prepare<BVal>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.a.exec_inv()
         &&& self.b.exec_inv()

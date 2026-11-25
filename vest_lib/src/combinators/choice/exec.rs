@@ -45,6 +45,7 @@ impl<I, A, B> Parser<I> for super::Choice<A, B> where
         core::cmp::min(self.0.min_byte_len(), self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -96,6 +97,7 @@ impl<A, B, TA, TB> ByteLen<super::Sum<TA, TB>> for super::Choice<A, B> where
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -115,6 +117,7 @@ impl<A, B, TA, TB> Prepare<super::Sum<TA, TB>> for super::Choice<A, B> where
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -139,6 +142,7 @@ impl<const NONDETERMINISTIC: bool, I, A, B> Parser<I> for super::Alt<A, B, NONDE
         core::cmp::min(self.0.min_byte_len(), self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -167,6 +171,7 @@ impl<I, A, B> Parser<I> for super::Sum<A, B> where
         }
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         match self {
             super::Sum::Inl(a) => a.exec_inv(),
@@ -215,6 +220,7 @@ impl<A, B, TA, TB> ByteLen<super::Sum<TA, TB>> for super::Sum<A, B> where
     A: ByteLen<TA>,
     B: ByteLen<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         match self {
             super::Sum::Inl(a) => a.exec_inv(),
@@ -237,6 +243,7 @@ impl<A, B, TA, TB> Prepare<super::Sum<TA, TB>> for super::Sum<A, B> where
     A: Prepare<TA>,
     B: Prepare<TB>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         match self {
             super::Sum::Inl(a) => a.exec_inv(),

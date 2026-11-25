@@ -521,6 +521,7 @@ impl<C, T, const LIMIT: usize> Prepare<T> for BerCharStringFmt<C, LIMIT> where
     T: DeepView + ?Sized,
     C: SpecCombinator + Copy + GoodSerializer + SPRoundTrip + Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& <C as Prepare<T>>::exec_inv(&self.1)
         &&& self.1.serialize_inv()
@@ -544,6 +545,7 @@ impl<C, T, const LIMIT: usize> ByteLen<T> for BerCharStringFmt<C, LIMIT> where
     T: DeepView + ?Sized,
     C: SpecCombinator + Copy + GoodSerializer + ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as ByteLen<T>>::exec_inv(&self.1) && self.1.serialize_inv()
     }

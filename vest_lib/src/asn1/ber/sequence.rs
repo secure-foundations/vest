@@ -494,6 +494,7 @@ impl<'i, C> Parser<&'i [u8]> for BerSequenceFmt<C> where
         2
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.1.exec_inv()
         &&& self.1.safe_inv()
@@ -546,6 +547,7 @@ impl<Output: OutputBuf, C, T> Serializer<Output, T> for BerSequenceFmt<C> where
 }
 
 impl<C, T> Prepare<T> for BerSequenceFmt<C> where T: DeepView + ?Sized, C: BerSeqBody + Prepare<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as Prepare<T>>::exec_inv(&self.1)
     }
@@ -568,6 +570,7 @@ impl<C, T> Prepare<T> for BerSequenceFmt<C> where T: DeepView + ?Sized, C: BerSe
 }
 
 impl<C, T> ByteLen<T> for BerSequenceFmt<C> where T: DeepView + ?Sized, C: BerSeqBody + ByteLen<T> {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <C as ByteLen<T>>::exec_inv(&self.1)
     }

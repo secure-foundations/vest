@@ -112,6 +112,7 @@ impl<A, B, AVal, BVal> ByteLen<(AVal, BVal)> for super::PairRev<A, B> where
     A: ByteLen<AVal>,
     B: ByteLen<BVal>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -133,6 +134,7 @@ impl<A, B, AVal, BVal> Prepare<(AVal, BVal)> for super::PairRev<A, B> where
     A: Prepare<AVal>,
     B: Prepare<BVal>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -161,6 +163,7 @@ impl<I, A> Parser<I> for super::RepeatTillEnd<A> where
         0
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -181,6 +184,7 @@ impl<I, A> Parser<I> for super::OptionalEnd<A> where I: InputBuf, A: Parser<I> +
         0
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -207,6 +211,7 @@ impl<Output: OutputBuf, A, T> Serializer<Output, &[T]> for super::RepeatTillEnd<
 }
 
 impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -217,6 +222,7 @@ impl<A, T> ByteLen<&[T]> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy,
 }
 
 impl<A, T> Prepare<&[T]> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -247,6 +253,7 @@ impl<Output: OutputBuf, A, T> Serializer<Output, Vec<T>> for super::RepeatTillEn
 
 #[cfg(feature = "alloc")]
 impl<A, T> ByteLen<Vec<T>> for super::RepeatTillEnd<A> where A: ByteLen<T> + Copy, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -262,6 +269,7 @@ impl<A, T> ByteLen<Vec<T>> for super::RepeatTillEnd<A> where A: ByteLen<T> + Cop
 
 #[cfg(feature = "alloc")]
 impl<A, T> Prepare<Vec<T>> for super::RepeatTillEnd<A> where A: Prepare<T> + Copy, T: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -290,6 +298,7 @@ impl<Output: OutputBuf, A, T> Serializer<Output, Option<T>> for super::OptionalE
 }
 
 impl<A, AST> ByteLen<Option<AST>> for super::OptionalEnd<A> where A: ByteLen<AST>, AST: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -300,6 +309,7 @@ impl<A, AST> ByteLen<Option<AST>> for super::OptionalEnd<A> where A: ByteLen<AST
 }
 
 impl<A, AST> Prepare<Option<AST>> for super::OptionalEnd<A> where A: Prepare<AST>, AST: DeepView {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }

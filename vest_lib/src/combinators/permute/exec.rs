@@ -19,6 +19,7 @@ impl<I, P1, P2> Parser<I> for super::Permute2<P1, P2> where
             .saturating_add(self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -60,6 +61,7 @@ impl<P1, P2, T1, T2> ByteLen<(T1, T2)> for super::Permute2<P1, P2> where
     P1: ByteLen<T1>,
     P2: ByteLen<T2>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -76,6 +78,7 @@ impl<P1, P2, T1, T2> Prepare<(T1, T2)> for super::Permute2<P1, P2> where
     P1: Prepare<T1>,
     P2: Prepare<T2>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -100,6 +103,7 @@ impl<I, A, B, C> Parser<I> for super::Permute3<A, B, C> where
             .saturating_add(self.2.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -156,6 +160,7 @@ impl<A, B, C, TA, TB, TC> ByteLen<(TA, (TB, TC))> for super::Permute3<A, B, C> w
     B: ByteLen<TB>,
     C: ByteLen<TC>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -183,6 +188,7 @@ impl<I, A, B, C, D> Parser<I> for super::Permute4<A, B, C, D> where
             .saturating_add(self.3.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -263,6 +269,7 @@ impl<A, B, C, D, TA, TB, TC, TD> ByteLen<(TA, (TB, (TC, TD)))> for super::Permut
     C: ByteLen<TC>,
     D: ByteLen<TD>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -283,6 +290,7 @@ impl<A, B, C, TA, TB, TC> Prepare<(TA, (TB, TC))> for super::Permute3<A, B, C> w
     B: Prepare<TB>,
     C: Prepare<TC>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -309,6 +317,7 @@ impl<A, B, C, D, TA, TB, TC, TD> Prepare<(TA, (TB, (TC, TD)))> for super::Permut
     C: Prepare<TC>,
     D: Prepare<TD>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -339,6 +348,7 @@ impl<I, A, B, C, D, E> Parser<I> for super::Permute5<A, B, C, D, E> where
             .saturating_add(self.4.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.0.safe_inv()
@@ -432,6 +442,7 @@ impl<A, B, C, D, E, TA, TB, TC, TD, TE> ByteLen<(TA, (TB, (TC, (TD, TE))))> for 
     D: ByteLen<TD>,
     E: ByteLen<TE>,
 {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -463,6 +474,7 @@ impl<A, B, C, D, E, TA, TB, TC, TD, TE> Prepare<(TA, (TB, (TC, (TD, TE))))> for 
     D: Prepare<TD>,
     E: Prepare<TE>,
 {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()

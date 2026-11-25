@@ -28,6 +28,7 @@ impl<I, A, PredFn> Parser<I> for super::Refined<A, PredFn> where
         self.0.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -62,6 +63,7 @@ impl<A, PredFn, T> ByteLen<T> for super::Refined<A, PredFn> where
     A: ByteLen<T>,
     PredFn: Pred<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -76,6 +78,7 @@ impl<A, PredFn, T> Prepare<T> for super::Refined<A, PredFn> where
     A: Prepare<T>,
     PredFn: Pred<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -100,6 +103,7 @@ impl<I, Inner, T> Parser<I> for super::Const<Inner, T> where
         self.0.min_byte_len()
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& forall|v: Inner::PVal| v.deep_view() == v
@@ -133,6 +137,7 @@ impl<Inner, V, T> ByteLen<T> for super::Const<Inner, V> where
     T: DeepView<V = V>,
     Inner: SpecByteLen<T = V> + ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.0.exec_inv()
     }
@@ -146,6 +151,7 @@ impl<Inner, T> Prepare<T> for super::Const<Inner, T> where
     T: DeepView<V = T> + PartialEq + Structural,
     Inner: Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& forall|v: T| v.deep_view() == v
@@ -221,6 +227,7 @@ impl<I, Tg, TagVal, Of> Parser<I> for super::PrefixTagged<Tg, TagVal, Of> where
         self.0.min_byte_len().saturating_add(self.2.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         Preceded::<_, _, _, false> {
             a: super::Const(&self.0, self.1),
@@ -272,6 +279,7 @@ impl<Tg, TagVal, Of, T> ByteLen<T> for super::PrefixTagged<Tg, TagVal, Of> where
     T: DeepView,
     Of: ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
@@ -294,6 +302,7 @@ impl<Tg, TagVal, Of, T> Prepare<T> for super::PrefixTagged<Tg, TagVal, Of> where
     T: DeepView,
     Of: Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.2.exec_inv()
@@ -322,6 +331,7 @@ impl<I, Of, Tg, TagVal> Parser<I> for super::SuffixTagged<Of, Tg, TagVal> where
         self.0.min_byte_len().saturating_add(self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         Terminated::<_, _, _, false> {
             a: &self.0,
@@ -373,6 +383,7 @@ impl<Of, TagVal, Tg, T> ByteLen<T> for super::SuffixTagged<Of, Tg, TagVal> where
     T: DeepView,
     Of: ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()
@@ -395,6 +406,7 @@ impl<Of, TagVal, Tg, T> Prepare<T> for super::SuffixTagged<Of, Tg, TagVal> where
     T: DeepView,
     Of: Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         &&& self.0.exec_inv()
         &&& self.1.exec_inv()

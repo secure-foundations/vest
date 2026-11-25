@@ -521,41 +521,43 @@
 <a href=#521 id=521 data-nosnippet>521</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
 <a href=#522 id=522 data-nosnippet>522</a>    C: SpecCombinator + Copy + GoodSerializer + SPRoundTrip + Prepare&lt;T&gt;,
 <a href=#523 id=523 data-nosnippet>523</a> {
-<a href=#524 id=524 data-nosnippet>524</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#525 id=525 data-nosnippet>525</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
-<a href=#526 id=526 data-nosnippet>526</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.serialize_inv()
-<a href=#527 id=527 data-nosnippet>527</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.sp_roundtrip_inv()
-<a href=#528 id=528 data-nosnippet>528</a>    }
-<a href=#529 id=529 data-nosnippet>529</a>
-<a href=#530 id=530 data-nosnippet>530</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
-<a href=#531 id=531 data-nosnippet>531</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;C, BER&gt;(primitive_tag(<span class="self">self</span>.<span class="number">0</span>), <span class="self">self</span>.<span class="number">1</span>);
-<a href=#532 id=532 data-nosnippet>532</a>        <span class="kw">let </span>result = normalized.prepare(value);
-<a href=#533 id=533 data-nosnippet>533</a>        proof {
-<a href=#534 id=534 data-nosnippet>534</a>            <span class="kw">if let </span><span class="prelude-val">Ok</span>(_len) = result {
-<a href=#535 id=535 data-nosnippet>535</a>                <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_len(value.deep_view());
-<a href=#536 id=536 data-nosnippet>536</a>                <span class="self">self</span>.<span class="number">1</span>.theorem_serialize_parse_roundtrip(value.deep_view());
-<a href=#537 id=537 data-nosnippet>537</a>            }
-<a href=#538 id=538 data-nosnippet>538</a>        }
-<a href=#539 id=539 data-nosnippet>539</a>        result
-<a href=#540 id=540 data-nosnippet>540</a>    }
-<a href=#541 id=541 data-nosnippet>541</a>}
-<a href=#542 id=542 data-nosnippet>542</a>
-<a href=#543 id=543 data-nosnippet>543</a><span class="kw">impl</span>&lt;C, T, <span class="kw">const </span>LIMIT: usize&gt; ByteLen&lt;T&gt; <span class="kw">for </span>BerCharStringFmt&lt;C, LIMIT&gt; <span class="kw">where
-<a href=#544 id=544 data-nosnippet>544</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
-<a href=#545 id=545 data-nosnippet>545</a>    C: SpecCombinator + Copy + GoodSerializer + ByteLen&lt;T&gt;,
-<a href=#546 id=546 data-nosnippet>546</a> {
-<a href=#547 id=547 data-nosnippet>547</a>    open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-<a href=#548 id=548 data-nosnippet>548</a>        &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>) &amp;&amp; <span class="self">self</span>.<span class="number">1</span>.serialize_inv()
-<a href=#549 id=549 data-nosnippet>549</a>    }
-<a href=#550 id=550 data-nosnippet>550</a>
-<a href=#551 id=551 data-nosnippet>551</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
-<a href=#552 id=552 data-nosnippet>552</a>        proof {
-<a href=#553 id=553 data-nosnippet>553</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_len(value.deep_view());
-<a href=#554 id=554 data-nosnippet>554</a>        }
-<a href=#555 id=555 data-nosnippet>555</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;C, BER&gt;(primitive_tag(<span class="self">self</span>.<span class="number">0</span>), <span class="self">self</span>.<span class="number">1</span>);
-<a href=#556 id=556 data-nosnippet>556</a>        normalized.length(value)
-<a href=#557 id=557 data-nosnippet>557</a>    }
-<a href=#558 id=558 data-nosnippet>558</a>}
-<a href=#559 id=559 data-nosnippet>559</a>
-<a href=#560 id=560 data-nosnippet>560</a>} <span class="comment">// verus!
+<a href=#524 id=524 data-nosnippet>524</a>    <span class="attr">#[verifier::prophetic]
+<a href=#525 id=525 data-nosnippet>525</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#526 id=526 data-nosnippet>526</a>        &amp;&amp;&amp; &lt;C <span class="kw">as </span>Prepare&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>)
+<a href=#527 id=527 data-nosnippet>527</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.serialize_inv()
+<a href=#528 id=528 data-nosnippet>528</a>        &amp;&amp;&amp; <span class="self">self</span>.<span class="number">1</span>.sp_roundtrip_inv()
+<a href=#529 id=529 data-nosnippet>529</a>    }
+<a href=#530 id=530 data-nosnippet>530</a>
+<a href=#531 id=531 data-nosnippet>531</a>    <span class="kw">fn </span>prepare(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; <span class="prelude-ty">Result</span>&lt;usize, PreSerializeError&gt; {
+<a href=#532 id=532 data-nosnippet>532</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;C, BER&gt;(primitive_tag(<span class="self">self</span>.<span class="number">0</span>), <span class="self">self</span>.<span class="number">1</span>);
+<a href=#533 id=533 data-nosnippet>533</a>        <span class="kw">let </span>result = normalized.prepare(value);
+<a href=#534 id=534 data-nosnippet>534</a>        proof {
+<a href=#535 id=535 data-nosnippet>535</a>            <span class="kw">if let </span><span class="prelude-val">Ok</span>(_len) = result {
+<a href=#536 id=536 data-nosnippet>536</a>                <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_len(value.deep_view());
+<a href=#537 id=537 data-nosnippet>537</a>                <span class="self">self</span>.<span class="number">1</span>.theorem_serialize_parse_roundtrip(value.deep_view());
+<a href=#538 id=538 data-nosnippet>538</a>            }
+<a href=#539 id=539 data-nosnippet>539</a>        }
+<a href=#540 id=540 data-nosnippet>540</a>        result
+<a href=#541 id=541 data-nosnippet>541</a>    }
+<a href=#542 id=542 data-nosnippet>542</a>}
+<a href=#543 id=543 data-nosnippet>543</a>
+<a href=#544 id=544 data-nosnippet>544</a><span class="kw">impl</span>&lt;C, T, <span class="kw">const </span>LIMIT: usize&gt; ByteLen&lt;T&gt; <span class="kw">for </span>BerCharStringFmt&lt;C, LIMIT&gt; <span class="kw">where
+<a href=#545 id=545 data-nosnippet>545</a>    </span>T: DeepView + <span class="question-mark">?</span>Sized,
+<a href=#546 id=546 data-nosnippet>546</a>    C: SpecCombinator + Copy + GoodSerializer + ByteLen&lt;T&gt;,
+<a href=#547 id=547 data-nosnippet>547</a> {
+<a href=#548 id=548 data-nosnippet>548</a>    <span class="attr">#[verifier::prophetic]
+<a href=#549 id=549 data-nosnippet>549</a>    </span>open spec <span class="kw">fn </span>exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#550 id=550 data-nosnippet>550</a>        &lt;C <span class="kw">as </span>ByteLen&lt;T&gt;&gt;::exec_inv(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">1</span>) &amp;&amp; <span class="self">self</span>.<span class="number">1</span>.serialize_inv()
+<a href=#551 id=551 data-nosnippet>551</a>    }
+<a href=#552 id=552 data-nosnippet>552</a>
+<a href=#553 id=553 data-nosnippet>553</a>    <span class="kw">fn </span>length(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) -&gt; usize {
+<a href=#554 id=554 data-nosnippet>554</a>        proof {
+<a href=#555 id=555 data-nosnippet>555</a>            <span class="self">self</span>.<span class="number">1</span>.lemma_serialize_len(value.deep_view());
+<a href=#556 id=556 data-nosnippet>556</a>        }
+<a href=#557 id=557 data-nosnippet>557</a>        <span class="kw">let </span>normalized = ASN1Fmt::&lt;C, BER&gt;(primitive_tag(<span class="self">self</span>.<span class="number">0</span>), <span class="self">self</span>.<span class="number">1</span>);
+<a href=#558 id=558 data-nosnippet>558</a>        normalized.length(value)
+<a href=#559 id=559 data-nosnippet>559</a>    }
+<a href=#560 id=560 data-nosnippet>560</a>}
+<a href=#561 id=561 data-nosnippet>561</a>
+<a href=#562 id=562 data-nosnippet>562</a>} <span class="comment">// verus!
 </span></code></pre></div></section></main></body></html>

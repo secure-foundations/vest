@@ -444,6 +444,7 @@ impl<T, const LIMIT: usize> Prepare<T> for BerBitStringFmt<LIMIT> where
     T: DeepView<V = BitStringSpec> + ?Sized,
     ASN1Fmt<BitStringFmt<BER>, BER>: Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <ASN1Fmt<BitStringFmt<BER>, BER> as Prepare<T>>::exec_inv(
             &ber_bit_string_normalized_fmt(self.0),
@@ -463,6 +464,7 @@ impl<T, const LIMIT: usize> ByteLen<T> for BerBitStringFmt<LIMIT> where
     T: DeepView<V = BitStringSpec> + ?Sized,
     ASN1Fmt<BitStringFmt<BER>, BER>: ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         <ASN1Fmt<BitStringFmt<BER>, BER> as ByteLen<T>>::exec_inv(
             &ber_bit_string_normalized_fmt(self.0),

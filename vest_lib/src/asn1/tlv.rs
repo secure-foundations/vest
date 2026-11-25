@@ -288,6 +288,7 @@ impl<'i, Content, const DER: bool> Parser<&'i [u8]> for ASN1Fmt<Content, DER> wh
         2usize.saturating_add(self.1.min_byte_len())
     }
 
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -340,6 +341,7 @@ impl<Content, T, const DER: bool> Prepare<T> for ASN1Fmt<Content, DER> where
     T: DeepView + ?Sized,
     Content: SpecCombinator + Prepare<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
@@ -361,6 +363,7 @@ impl<Content, T, const DER: bool> ByteLen<T> for ASN1Fmt<Content, DER> where
     T: DeepView + ?Sized,
     Content: SpecCombinator + ByteLen<T>,
  {
+    #[verifier::prophetic]
     open spec fn exec_inv(&self) -> bool {
         self.1.exec_inv()
     }
