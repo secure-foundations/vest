@@ -79,6 +79,7 @@ pub type CborMap<'i> = Vec<(CborValue<'i>, CborValue<'i>)>;
 
 /// Generic CBOR value.
 #[derive(Debug, PartialEq, Eq)]
+#[verifier::external_derive(Debug)]
 pub enum CborValue<'i> {
     /// An integer in the RFC 8949 range `-2^64 ..= 2^64 - 1`.
     Integer(i128),
